@@ -1,0 +1,1421 @@
+<html lang="en"><head><script>(function(firebaseConfig, initialAuthToken, appId) {
+        window.__firebase_config = firebaseConfig;
+        window.__initial_auth_token = initialAuthToken;
+        window.__app_id = appId;
+            })("\n{\n  \"apiKey\": \"AIzaSyCqyCcs2R2e7AegGjvFAwG98wlamtbHvZY\",\n  \"authDomain\": \"bard-frontend.firebaseapp.com\",\n  \"projectId\": \"bard-frontend\",\n  \"storageBucket\": \"bard-frontend.firebasestorage.app\",\n  \"messagingSenderId\": \"175205271074\",\n  \"appId\": \"1:175205271074:web:2b7bd4d34d33bf38e6ec7b\"\n}\n","eyJhbGciOiJSUzI1NiIsImtpZCI6ImY3NWQ2NDhiMmFkZjUwOWU5MTEzMWVlYjQ2MzRlYTBhNGUxOTg3ZDUiLCJ0eXAiOiJKV1QifQ.eyJzdWIiOiJmaXJlYmFzZS1hZG1pbnNkay1mYnN2Y0BiYXJkLWZyb250ZW5kLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwiYXVkIjoiaHR0cHM6Ly9pZGVudGl0eXRvb2xraXQuZ29vZ2xlYXBpcy5jb20vZ29vZ2xlLmlkZW50aXR5LmlkZW50aXR5dG9vbGtpdC52MS5JZGVudGl0eVRvb2xraXQiLCJ1aWQiOiIwOTA1MjEyNjE1MzYxNzIwNDY1NCIsImlzcyI6ImZpcmViYXNlLWFkbWluc2RrLWZic3ZjQGJhcmQtZnJvbnRlbmQuaWFtLmdzZXJ2aWNlYWNjb3VudC5jb20iLCJjbGFpbXMiOnsiYXBwSWQiOiJjXzg4NWFhNzA0ZGIzODI3ZGNfbnVtYmVyX2Jhc2VfdGVuX2FwcC0xMzYifSwiZXhwIjoxNzU2MTM3NjIxLCJpYXQiOjE3NTYxMzQwMjEsImFsZyI6IlJTMjU2In0.LtZRyWwGRmdv38PoAF67MB_zAQfJ8h9cGx-IevosfHrFcZDJYVgBNgwGej8LRpALqngahR-np8ONBbRzK1lSa0BJ9jcfFPtMxkuV8Szmf9ZBIGuqgf1CIF8xrpr2C7F-mJfDssO2ec7YQAt5RspCCUQcwxvfl5rMrkkbVovz1FQNL84aOBb-AcErG0R8Qlv6-sP3tgpVLdtpgt4QCZDLi8ogq5pW_4bBKc5w9L8k_ahpKgr0Eyup7HXXGXWXPd8viC56Gzv0YcKlKDY4MbTOsxetzoGhH1wJQczY_D8eSD53B96TYCYGjcwXaN-YCm9EfuX1X_Z40VnT70c_HCTx5Q","c_885aa704db3827dc_number_base_ten_app-136")</script><script>(function() {
+  // Ensure this script is executed only once
+  if (window.firebaseAuthBridgeScriptLoaded) {
+    return;
+  }
+  window.firebaseAuthBridgeScriptLoaded = true;
+
+  let nextTokenPromiseId = 0;
+
+  // Stores { resolve, reject } for ongoing token requests
+  const pendingTokenPromises = {};
+
+  // Listen for messages from the Host Application
+  window.addEventListener('message', function(event) {
+
+    const messageData = event.data;
+
+  if (messageData && messageData.type === 'RESOLVE_NEW_FIREBASE_TOKEN') {
+      const { success, token, error, promiseId } = messageData ?? {};
+      if (pendingTokenPromises[promiseId]) {
+        if (success) {
+          pendingTokenPromises[promiseId].resolve(token);
+        } else {
+          pendingTokenPromises[promiseId].reject(new Error(error || 'Token refresh failed from host.'));
+        }
+        delete pendingTokenPromises[promiseId];
+      }
+    }
+  });
+
+  // Expose a function for the Generated App to request a new Firebase token
+  window.requestNewFirebaseToken = function() {
+    const currentPromiseId = nextTokenPromiseId++;
+    const promise = new Promise((resolve, reject) => {
+      pendingTokenPromises[currentPromiseId] = { resolve, reject };
+    });
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({
+        type: 'REQUEST_NEW_FIREBASE_TOKEN',
+        promiseId: currentPromiseId
+      }, '*');
+    } else {
+      pendingTokenPromises[currentPromiseId].reject(new Error('No parent window to request token from.'));
+      delete pendingTokenPromises[currentPromiseId];
+    }
+    return promise;
+  };
+})();</script><script>
+let realOriginalGetUserMedia = null;
+if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+  realOriginalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+}
+
+(function() {
+  if (navigator.mediaDevices && navigator.mediaDevices.__proto__) {
+    try {
+      Object.defineProperty(navigator.mediaDevices.__proto__, 'getUserMedia', {
+        get: function() {
+          return undefined; // Or throw an error
+        },
+        configurable: false
+      });
+    } catch (error) {
+      console.error("Error defining prototype getter:", error);
+    }
+  }
+})();
+
+(function() {
+  const pendingMediaResolvers = {};
+  let nextMediaPromiseId = 0;
+
+  function requestMediaPermissions(constraints) {
+    const mediaPromiseId = nextMediaPromiseId++;
+    const promise = new Promise((resolve, reject) => {
+      pendingMediaResolvers[mediaPromiseId] = (granted) => {
+        delete pendingMediaResolvers[mediaPromiseId];
+        resolve(granted);
+      };
+    });
+
+    window.parent.postMessage({
+      type: 'requestMediaPermission',
+      constraints: constraints,
+      promiseId: mediaPromiseId,
+    }, '*');
+
+    return promise;
+  }
+
+  let originalGetUserMedia = realOriginalGetUserMedia;
+
+  function interceptGetUserMedia() {
+    if (navigator.mediaDevices) {
+      Object.defineProperty(navigator.mediaDevices, 'getUserMedia', {
+        value: function(constraints) {
+          return requestMediaPermissions(constraints).then((granted) => {
+            if (granted) {
+              if (originalGetUserMedia) {
+                return originalGetUserMedia(constraints);
+              } else {
+                throw new Error("Original getUserMedia not available.");
+              }
+            } else {
+              throw new DOMException('Permission denied', 'NotAllowedError');
+            }
+          });
+        },
+        writable: false,
+        configurable: false
+      });
+    }
+  }
+
+  interceptGetUserMedia();
+
+  const observer = new MutationObserver(function(mutationsList, observer) {
+    for (const mutation of mutationsList) {
+      if (mutation.type === 'reconfigured' && mutation.name === 'getUserMedia' && mutation.object === navigator.mediaDevices) {
+        interceptGetUserMedia();
+      } else if (mutation.type === 'attributes' && mutation.attributeName === 'getUserMedia' && mutation.target === navigator.mediaDevices) {
+        interceptGetUserMedia();
+      } else if (mutation.type === 'childList' && mutation.addedNodes) {
+        mutation.addedNodes.forEach(node => {
+          if (node === navigator.mediaDevices) {
+            interceptGetUserMedia();
+          }
+        });
+      }
+    }
+  });
+
+  function interceptSpeechRecognition() {
+    if (!window.SpeechRecognition && !window.webkitSpeechRecognition) {
+      return;
+    }
+
+    const OriginalSpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    const SpeechRecognitionWrapper = function(...args) {
+      const recognizer = new OriginalSpeechRecognition(...args);
+      const originalStart = recognizer.start.bind(recognizer);
+
+      recognizer.start = function() {
+        requestMediaPermissions({ audio: true }).then(granted => {
+          if (granted) {
+            originalStart();
+          } else {
+            const errorEvent = new SpeechRecognitionErrorEvent('error');
+            errorEvent.error = 'not-allowed'; // This is the standard error for permission denial.
+            recognizer.dispatchEvent(errorEvent);
+          }
+        });
+      };
+
+      return recognizer;
+    };
+
+    SpeechRecognitionWrapper.prototype = OriginalSpeechRecognition.prototype;
+    SpeechRecognitionWrapper.prototype.constructor = SpeechRecognitionWrapper;
+
+    if (window.SpeechRecognition) {
+      window.SpeechRecognition = SpeechRecognitionWrapper;
+    }
+    if (window.webkitSpeechRecognition) {
+      window.webkitSpeechRecognition = SpeechRecognitionWrapper;
+    }
+  }
+
+  interceptSpeechRecognition();
+
+  window.addEventListener('message', function(event) {
+    if (event.data) {
+      if (event.data.type === 'resolveMediaPermission') {
+        const { promiseId, granted } = event.data;
+        if (pendingMediaResolvers[promiseId]) {
+          pendingMediaResolvers[promiseId](granted);
+        }
+      }
+    }
+  });
+
+})();</script><script>((function(modelInformation) {
+  const originalFetch = window.fetch;
+  // TODO: b/421908508 - Move these out of the script and match all generative AI model calls.
+  let googleLlmBaseApiUrls = [
+    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.textModelName + ':streamGenerateContent',
+    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.textModelName + ':generateContent',
+    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.imageModelName + ':predict',
+    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.imageModelName + ':predictLongRunning',
+    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.imageEditModelName + ':generateContent',
+    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.videoModelName + ':predict',
+    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.videoModelName + ':predictLongRunning',
+    'https://generativelanguage.googleapis.com/v1beta/models/' + modelInformation.ttsModelName + ':generateContent',
+  ];
+  modelInformation.deprecatedTextModelNames.forEach((modelName) => {
+    googleLlmBaseApiUrls.push(
+      'https://generativelanguage.googleapis.com/v1beta/models/' + modelName + ':streamGenerateContent',
+      'https://generativelanguage.googleapis.com/v1beta/models/' + modelName + ':generateContent',
+    );
+  });
+
+  const pendingFetchResolvers = {};
+  let nextPromiseId = 0;
+
+  function handleStringInput(input, optionsArgument) {
+    const actualUrl = input;
+    const fetchCallArgs = [actualUrl, optionsArgument];
+    const effectiveOptions = optionsArgument || {};
+    const bodyForApiKeyCheck = effectiveOptions.body;
+    const bodyForPostMessage = effectiveOptions.body;
+    return { actualUrl, fetchCallArgs, effectiveOptions, bodyForApiKeyCheck, bodyForPostMessage };
+  }
+
+  function handleRequestInput(input, optionsArgument) {
+    const actualUrl = input.url;
+    const fetchCallArgs = [input, optionsArgument];
+    const effectiveOptions = { method: input.method, headers: new Headers(input.headers) };
+    let bodyForApiKeyCheck;
+    let bodyForPostMessage;
+
+    if (optionsArgument) {
+      if (optionsArgument.method) effectiveOptions.method = optionsArgument.method;
+      if (optionsArgument.headers) effectiveOptions.headers = new Headers(optionsArgument.headers);
+      if ('body' in optionsArgument) {
+        bodyForApiKeyCheck = optionsArgument.body;
+        bodyForPostMessage = optionsArgument.body;
+      } else {
+        bodyForApiKeyCheck = undefined;
+        bodyForPostMessage = input.body;
+      }
+    } else {
+      bodyForApiKeyCheck = undefined;
+      bodyForPostMessage = input.body;
+    }
+    return { actualUrl, fetchCallArgs, effectiveOptions, bodyForApiKeyCheck, bodyForPostMessage };
+  }
+
+  window.fetch = function(input, optionsArgument) {
+    let actualUrl;
+    let fetchCallArgs;
+    let effectiveOptions = {};
+    let bodyForApiKeyCheck;
+    let bodyForPostMessage;
+
+    if (typeof input === 'string') {
+      ({actualUrl, fetchCallArgs, effectiveOptions, bodyForApiKeyCheck, bodyForPostMessage} = handleStringInput(input, optionsArgument));
+    } else if (input instanceof Request) {
+      ({actualUrl, fetchCallArgs, effectiveOptions, bodyForApiKeyCheck, bodyForPostMessage} = handleRequestInput(input, optionsArgument));
+    } else {
+      return originalFetch.apply(window, [input, optionsArgument]);
+    }
+
+    effectiveOptions.method = effectiveOptions.method || 'GET';
+    if (!effectiveOptions.headers) {
+      effectiveOptions.headers = new Headers();
+    }
+
+
+    if (typeof actualUrl === 'string' && googleLlmBaseApiUrls.some((url) => actualUrl.startsWith(url))) {
+      let apiKeyIsNull = true;
+
+      const regex = new RegExp("models/([^:]+)");
+      const modelNameMatch = actualUrl.match(regex);
+      const modelName = modelNameMatch ? modelNameMatch[1] : 'unspecified';
+
+
+      try {
+        const urlObject = new URL(actualUrl);  // Use URL object for robust parsing
+        const apiKeyParam = urlObject.searchParams.get('key');
+        if (apiKeyParam) {
+          apiKeyIsNull = false;
+        }
+      } catch (e) {
+        // Continue checks even if URL parsing fails
+      }
+
+      if (apiKeyIsNull && effectiveOptions.headers) {
+        const h = new Headers(effectiveOptions.headers);
+        const apiKeyHeaderValue = h.get('X-API-Key') || h.get('x-api-key');
+        if (apiKeyHeaderValue) {
+          apiKeyIsNull = false;
+          return originalFetch.apply(window, fetchCallArgs);
+        }
+      }
+
+      if (apiKeyIsNull && effectiveOptions.method && ['POST', 'PUT', 'PATCH'].includes(effectiveOptions.method.toUpperCase()) && typeof bodyForApiKeyCheck === 'string') {
+        try {
+          const bodyData = JSON.parse(bodyForApiKeyCheck);
+          if (bodyData && bodyData.apiKey) {
+            apiKeyIsNull = false;
+            return originalFetch.apply(window, fetchCallArgs);
+          }
+        } catch (e) {
+          // Ignore JSON parsing errors
+        }
+      }
+
+      if(apiKeyIsNull) {
+        const promiseId = nextPromiseId++;
+        const promise = new Promise((resolve) => {
+          pendingFetchResolvers[promiseId] = (resolvedResponse) => {
+            delete pendingFetchResolvers[promiseId];
+            resolve(resolvedResponse);
+          };
+        });
+
+        let serializedBodyForPostMessage;
+        if (typeof bodyForPostMessage === 'string' || bodyForPostMessage == null) {
+            serializedBodyForPostMessage = bodyForPostMessage;
+        } else if (bodyForPostMessage instanceof ReadableStream) {
+            serializedBodyForPostMessage = null;
+        } else {
+            try {
+                serializedBodyForPostMessage = JSON.stringify(bodyForPostMessage);
+            } catch (e) {
+                serializedBodyForPostMessage = null;
+            }
+        }
+
+        const messageOptions = {
+            method: effectiveOptions.method,
+            headers: Object.fromEntries(new Headers(effectiveOptions.headers).entries()),
+            body: serializedBodyForPostMessage
+        };
+
+        window.parent.postMessage({
+          type: 'requestFetch',
+          url: actualUrl,
+          modelName: modelName,
+          options: messageOptions,
+          promiseId: promiseId,
+        }, '*');
+
+        return promise;
+      }
+      return originalFetch.apply(window, fetchCallArgs);
+    }
+    return originalFetch.apply(window, fetchCallArgs);
+  };
+
+  window.addEventListener('message', function(event) {
+    if (event.data && event.data.type === 'resolveFetch') {
+      const { promiseId, response } = event.data;
+      if (pendingFetchResolvers[promiseId]) {
+        try {
+          const reconstructedResponse = new Response(response.body, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: new Headers(response.headers),
+          });
+          pendingFetchResolvers[promiseId](reconstructedResponse);
+        } catch (error) {
+          pendingFetchResolvers[promiseId](new Response(null, { status: 500, statusText: "Interceptor Response Reconstruction Error" }));
+        }
+      }
+    }
+  });
+
+}))({"textModelName":"gemini-2.5-flash-preview-05-20","imageModelName":"imagen-3.0-generate-002","imageEditModelName":"gemini-2.0-flash-preview-image-generation","videoModelName":"veo-2.0-generate-001","ttsModelName":"gemini-2.5-flash-preview-tts","deprecatedTextModelNames":["gemini-2.0-flash","gemini-2.5-flash-preview-04-17"]})</script><script>(function() {
+  const originalConsoleLog = console.log;
+  const originalConsoleError = console.error;
+
+    /**
+   * Normalizes an error event or a promise rejection reason into a structured error object.
+   * @param {*} errorEventOrReason The error object or reason.
+   * @return {object} Structured error data { message, name, stack }.
+   */
+  function getErrorObject(errorEventOrReason) {
+    if (errorEventOrReason instanceof Error) {
+      return {
+        message: errorEventOrReason.message,
+        name: errorEventOrReason.name,
+        stack: errorEventOrReason.stack,
+      };
+    }
+    // Fallback for non-Error objects.
+    try {
+      return {
+        message: JSON.stringify(errorEventOrReason),
+        name: 'UnknownErrorType',
+        stack: null,
+      };
+    } catch (e) {
+      return {
+        message: String(errorEventOrReason),
+        name: 'UnknownErrorTypeNonStringifiable',
+        stack: null,
+      };
+    }
+  }
+
+  /**
+   * Converts an array of arguments (from log/error) into a single string.
+   * Handles Error objects specially to include their message and stack.
+   * @param {Array<*>} args - Arguments passed to console methods.
+   * @return {string} A string representation of the arguments.
+   */
+  function stringifyArgs(args) {
+    return args
+      .map((arg) => {
+        if (arg instanceof Error) {
+          const {message, stack} = arg;
+          return `Error: ${message}${stack ? ('\nStack: ' + stack) : ''}`;
+        }
+        if (typeof arg === 'object' && arg !== null) {
+          try {
+            return JSON.stringify(arg);
+          } catch (error) {
+            return '[Circular Object]';
+          }
+        } else {
+          return String(arg);
+        }
+      })
+      .join(' ');
+  }
+
+  console.log = function(...args) {
+    const logString = stringifyArgs(args);
+    window.parent.postMessage({ type: 'log', message: logString }, '*');
+    originalConsoleLog.apply(console, args);
+  };
+
+  console.error = function(...args) {
+    let errorData;
+    if (args.length > 0 && args[0] instanceof Error) {
+      const err = args[0];
+      // If the first arg is an Error, capture its details.
+      errorData = {
+        type: 'error',
+        source: 'CONSOLE_ERROR',
+        ...getErrorObject(err),
+        rawArgsString: stringifyArgs(args.slice(1)),
+        timestamp: new Date().toISOString(),
+      };
+    } else {
+      // If not an Error object, treat all args as a general error message.
+      errorData = {
+        type: 'error',
+        source: 'CONSOLE_ERROR',
+        message: stringifyArgs(args),
+        name: 'ConsoleLoggedError',
+        stack: null,
+        timestamp: new Date().toISOString(),
+      };
+    }
+    window.parent.postMessage(errorData, '*');
+    originalConsoleError.apply(console, args);
+  };
+
+  // Listen for global unhandled synchronous errors.
+  window.addEventListener('error', function(event) {
+    const errorDetails = event.error ? getErrorObject(event.error) : {
+      message: event.message,
+      name: 'GlobalError',
+      stack: null,
+      filename: event.filename,
+      lineno: event.lineno,
+      colno: event.colno,
+    };
+
+    window.parent.postMessage({
+      type: 'error',
+      source: 'global',
+      ...errorDetails,
+      message: errorDetails.message || event.message,
+      timestamp: new Date().toISOString(),
+    }, '*');
+  });
+
+  // Listen for unhandled promise rejections (asynchronous errors).
+  window.addEventListener('unhandledrejection', function(event) {
+    const errorDetails = getErrorObject(event.reason);
+
+    window.parent.postMessage({
+      type: 'error',
+      source: 'unhandledrejection',
+      ...errorDetails,
+      message: errorDetails.message || 'Unhandled Promise Rejection',
+      timestamp: new Date().toISOString(),
+    }, '*');
+  });
+
+})();</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detective Academy: Number-Base Ten Unit</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous"></script>
+    <style>
+        /* Using a detective-themed font from Google Fonts */
+        @import url('https://fonts.googleapis.com/css2?family=Special+Elite&family=Roboto:wght@400;700&display=swap');
+        
+        body { 
+            font-family: 'Roboto', sans-serif; 
+            background-color: #fdf6e3; /* Parchment paper color */
+        }
+        .font-title { font-family: 'Special Elite', cursive; }
+
+        .tab-active { 
+            background-color: #4a5568; /* Dark slate gray */
+            color: #fdf6e3;
+            border-bottom: 4px solid #f59e0b; /* Amber/gold */
+        }
+        .tab-inactive { 
+            background-color: #718096; /* Lighter slate gray */
+            color: #e2e8f0;
+            border-bottom: 4px solid transparent;
+        }
+        .slide { display: none; }
+        .slide.active { display: block; animation: fadeIn 0.5s; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .feedback { display: none; padding: 12px; margin-top: 10px; border-radius: 8px; border-left: 5px solid; }
+        .feedback.correct { display: block; background-color: #f0fff4; border-color: #48bb78; color: #2f855a; }
+        .feedback.incorrect { display: block; background-color: #fff5f5; border-color: #f56565; color: #c53030; }
+
+        .drop-zone { border: 2px dashed #a0aec0; min-height: 50px; background-color: rgba(255, 255, 255, 0.5); }
+        .drop-zone.drag-over { background-color: #f0fff4; border-color: #48bb78; }
+        .draggable { cursor: grab; user-select: none; }
+        .draggable:active { cursor: grabbing; opacity: 0.7; }
+        .draggable.dropped { background-color: #cbd5e0; cursor: not-allowed; }
+
+        /* Progress Bar Styling */
+        .progress-bar-container { background-color: #e2e8f0; border-radius: 9999px; overflow: hidden; border: 2px solid #4a5568; }
+        .progress-bar {
+            background: repeating-linear-gradient(
+                45deg,
+                #f59e0b,
+                #f59e0b 10px,
+                #4a5568 10px,
+                #4a5568 20px
+            );
+            transition: width 0.5s ease-in-out;
+        }
+        /* Hide buttons and interactive elements for PDF generation */
+        .pdf-clone-area .no-print { display: none !important; }
+    </style>
+<style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.fixed{position:fixed}.inset-0{inset:0px}.z-50{z-index:50}.mx-auto{margin-left:auto;margin-right:auto}.mt-2{margin-top:0.5rem}.mt-4{margin-top:1rem}.mb-2{margin-bottom:0.5rem}.mb-4{margin-bottom:1rem}.mt-6{margin-top:1.5rem}.flex{display:flex}.hidden{display:none}.h-4{height:1rem}.min-h-\[400px\]{min-height:400px}.max-w-5xl{max-width:64rem}.max-w-none{max-width:none}.transform{transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.items-center{align-items:center}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.space-x-1 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(0.25rem * var(--tw-space-x-reverse));margin-left:calc(0.25rem * calc(1 - var(--tw-space-x-reverse)))}.space-x-2 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(0.5rem * var(--tw-space-x-reverse));margin-left:calc(0.5rem * calc(1 - var(--tw-space-x-reverse)))}.rounded-lg{border-radius:0.5rem}.rounded-b-lg{border-bottom-right-radius:0.5rem;border-bottom-left-radius:0.5rem}.rounded-t-lg{border-top-left-radius:0.5rem;border-top-right-radius:0.5rem}.border-4{border-width:4px}.border{border-width:1px}.border-gray-700{--tw-border-opacity:1;border-color:rgb(55 65 81 / var(--tw-border-opacity, 1))}.bg-black{--tw-bg-opacity:1;background-color:rgb(0 0 0 / var(--tw-bg-opacity, 1))}.bg-gray-200{--tw-bg-opacity:1;background-color:rgb(229 231 235 / var(--tw-bg-opacity, 1))}.bg-gray-800{--tw-bg-opacity:1;background-color:rgb(31 41 55 / var(--tw-bg-opacity, 1))}.bg-green-600{--tw-bg-opacity:1;background-color:rgb(22 163 74 / var(--tw-bg-opacity, 1))}.bg-red-600{--tw-bg-opacity:1;background-color:rgb(220 38 38 / var(--tw-bg-opacity, 1))}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255 / var(--tw-bg-opacity, 1))}.bg-blue-600{--tw-bg-opacity:1;background-color:rgb(37 99 235 / var(--tw-bg-opacity, 1))}.bg-gray-50{--tw-bg-opacity:1;background-color:rgb(249 250 251 / var(--tw-bg-opacity, 1))}.bg-opacity-50{--tw-bg-opacity:0.5}.p-2{padding:0.5rem}.p-4{padding:1rem}.p-8{padding:2rem}.px-4{padding-left:1rem;padding-right:1rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.px-6{padding-left:1.5rem;padding-right:1.5rem}.text-center{text-align:center}.text-2xl{font-size:1.5rem;line-height:2rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.font-bold{font-weight:700}.text-amber-400{--tw-text-opacity:1;color:rgb(251 191 36 / var(--tw-text-opacity, 1))}.text-gray-500{--tw-text-opacity:1;color:rgb(107 114 128 / var(--tw-text-opacity, 1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.text-gray-700{--tw-text-opacity:1;color:rgb(55 65 81 / var(--tw-text-opacity, 1))}.text-gray-800{--tw-text-opacity:1;color:rgb(31 41 55 / var(--tw-text-opacity, 1))}.antialiased{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}.shadow-2xl{--tw-shadow:0 25px 50px -12px rgb(0 0 0 / 0.25);--tw-shadow-colored:0 25px 50px -12px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-inner{--tw-shadow:inset 0 2px 4px 0 rgb(0 0 0 / 0.05);--tw-shadow-colored:inset 0 2px 4px 0 var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-lg{--tw-shadow:0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 10px 15px -3px var(--tw-shadow-color), 0 4px 6px -4px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-md{--tw-shadow:0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 4px 6px -1px var(--tw-shadow-color), 0 2px 4px -2px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-xl{--tw-shadow:0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 20px 25px -5px var(--tw-shadow-color), 0 8px 10px -6px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.transition-transform{transition-property:transform;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.transition-all{transition-property:all;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.duration-300{transition-duration:300ms}.hover\:scale-105:hover{--tw-scale-x:1.05;--tw-scale-y:1.05;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.hover\:bg-green-700:hover{--tw-bg-opacity:1;background-color:rgb(21 128 61 / var(--tw-bg-opacity, 1))}.hover\:bg-red-700:hover{--tw-bg-opacity:1;background-color:rgb(185 28 28 / var(--tw-bg-opacity, 1))}.hover\:bg-blue-700:hover{--tw-bg-opacity:1;background-color:rgb(29 78 216 / var(--tw-bg-opacity, 1))}@media (min-width: 640px){.sm\:mt-0{margin-top:0px}.sm\:flex-row{flex-direction:row}.sm\:justify-start{justify-content:flex-start}.sm\:space-x-2 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(0.5rem * var(--tw-space-x-reverse));margin-left:calc(0.5rem * calc(1 - var(--tw-space-x-reverse)))}.sm\:p-4{padding:1rem}.sm\:p-6{padding:1.5rem}.sm\:text-3xl{font-size:1.875rem;line-height:2.25rem}}</style></head>
+<body class="antialiased">
+
+    <div id="app-container" class="max-w-5xl mx-auto p-2 sm:p-4 bg-gray-200 shadow-2xl rounded-lg mt-4 border-4 border-gray-700" style="background-image: url('data:image/svg+xml,%3Csvg width=%2252%22 height=%2226%22 viewBox=%220 0 52 26%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg fill=%22none%22 fill-rule=%22evenodd%22%3E%3Cg fill=%22%239c92ac%22 fill-opacity=%220.1%22%3E%3Cpath d=%22M10 10c0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6h2c0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4v2c-3.314 0-6-2.686-6-6 0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6zm25.464-1.95l8.486 8.486-1.414 1.414-8.486-8.486 1.414-1.414zM41 18c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm10 0c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zM31 18c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zM20 18c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');">
+        
+        <header class="bg-gray-800 text-white p-4 rounded-t-lg no-print shadow-lg">
+            <div class="flex flex-col sm:flex-row justify-between items-center">
+                <h1 class="font-title text-2xl sm:text-3xl text-amber-400">🕵️‍♂️ Detective Academy HQ</h1>
+                <div class="flex space-x-2 mt-2 sm:mt-0">
+                    <button id="download-work-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105">Download Work</button>
+                    <button id="download-pdf-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105">Download PDF</button>
+                </div>
+            </div>
+            <nav id="day-tabs" class="flex flex-wrap justify-center sm:justify-start space-x-1 sm:space-x-2 mt-4"><button data-day="1" class="px-4 py-2 rounded-t-lg font-bold transition-all duration-300 tab-active">Day 1</button><button data-day="2" class="px-4 py-2 rounded-t-lg font-bold transition-all duration-300 tab-inactive">Day 2</button><button data-day="3" class="px-4 py-2 rounded-t-lg font-bold transition-all duration-300 tab-inactive">Day 3</button><button data-day="4" class="px-4 py-2 rounded-t-lg font-bold transition-all duration-300 tab-inactive">Day 4</button></nav>
+             <div id="mode-switcher" class="mt-4 flex justify-center"></div>
+        </header>
+
+        <main id="content-area" class="p-4 sm:p-6 bg-white rounded-b-lg shadow-inner min-h-[400px]"><div class="slide active p-4 border rounded-lg bg-gray-50">
+                <div class="mb-4 no-print">
+                    <p class="font-bold text-gray-700">Case Progress:</p>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar h-4" style="width: 5%;"></div>
+                    </div>
+                </div>
+            <h2 class="text-2xl font-bold text-gray-800 mb-2 font-title">Hook: The Mystery of 333</h2><div class="text-lg text-gray-700 prose max-w-none">Here's our first mystery, Detective. We see three '3's in the number <strong>333</strong>, but are they all the same? What do you think? Are they triplets with the same value, or are they masters of disguise?</div></div><div class="flex justify-between mt-6 no-print"><div></div><button class="nav-btn next-btn bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">Next Clue</button></div></main>
+
+        <!-- Loading overlay for PDF generation -->
+        <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center">
+            <div class="bg-white p-8 rounded-lg shadow-xl text-center">
+                <p class="text-xl font-bold">Generating PDF Report...</p>
+                <p>Please wait, this may take a moment.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student progress data will be injected here for saved files -->
+    <script id="progress-data" type="application/json">{"currentDay":1,"currentMode":"lesson","lessonProgress":{"1":0,"2":0,"3":0,"4":0},"practiceLevel":{"1":1,"2":1,"3":1,"4":1},"practiceProgress":{"1":0,"2":0,"3":0,"4":0},"answers":{}}</script>
+
+    <script>
+    // Ensure the entire DOM is loaded before running the script
+    document.addEventListener('DOMContentLoaded', () => {
+
+        //======================================================================
+        // 1. DATA MODEL: The entire lesson plan and questions
+        // This object holds all the content for the application.
+        //======================================================================
+        const lessonData = {
+            1: {
+                title: "Day 1: The Case of the Secret Number Values",
+                lesson: [
+                    { type: 'hook', title: 'Hook: The Mystery of 333', content: "Here's our first mystery, Detective. We see three '3's in the number <strong>333</strong>, but are they all the same? What do you think? Are they triplets with the same value, or are they masters of disguise?" },
+                    { type: 'demo', title: 'Demonstration: Uncovering the Clues', content: "Numbers have secret identities! The same digit can have different values. In <strong>258</strong>, the '8' is worth 8, the '5' is worth 50, and the '2' is worth 200. We always start our investigation in the hundreds place!" },
+                    { type: 'i-do', id: 'd1_i_do_1', prompt: 'The number is <strong>629</strong>. Drag each digit to its correct place value.', activity: 'drag-drop-labeling', items: ['6', '2', '9'], targets: ['Hundreds', 'Tens', 'Ones'], solution: { 'Hundreds': '6', 'Tens': '2', 'Ones': '9' } },
+                    { type: 'i-do', id: 'd1_i_do_2', prompt: 'What is the value of the underlined digit: 8<u>3</u>5?', activity: 'multiple-choice', options: ['3', '30', '300'], solution: '30' },
+                    { type: 'i-do', id: 'd1_i_do_3', prompt: 'The digit 1 in <strong>194</strong> is in the ___ place.', activity: 'text-box', solution: 'hundreds' },
+                    { type: 'we-do', id: 'd1_w_do_1', prompt: 'What is the value of the <strong>7</strong> in 742?', activity: 'multiple-choice', options: ['7', '70', '700'], solution: '700' },
+                    { type: 'we-do', id: 'd1_w_do_2', prompt: 'The digit <strong>5</strong> in 259 is in the ___ place.', activity: 'text-box', solution: 'tens' },
+                    { type: 'we-do', id: 'd1_w_do_3', prompt: 'Is this statement true or false? In 481, the digit 4 means 40.', activity: 'true-false', solution: 'False' },
+                    { type: 'we-do', id: 'd1_w_do_4', prompt: 'Drag the digits of <strong>367</strong> to the correct places.', activity: 'drag-drop-labeling', items: ['3', '6', '7'], targets: ['Hundreds', 'Tens', 'Ones'], solution: { 'Hundreds': '3', 'Tens': '6', 'Ones': '7' } },
+                    { type: 'we-do', id: 'd1_w_do_5', prompt: 'What is the value of the <strong>9</strong> in 902?', activity: 'multiple-choice', options: ['9', '90', '900'], solution: '900' },
+                    { type: 'we-do', id: 'd1_w_do_6', prompt: 'The digit <strong>0</strong> in 510 is in the ___ place.', activity: 'text-box', solution: 'ones' },
+                    { type: 'we-do', id: 'd1_w_do_7', prompt: 'What is the value of the <strong>2</strong> in 825?', activity: 'multiple-choice', options: ['2', '20', '200'], solution: '20' },
+                    { type: 'we-do', id: 'd1_w_do_8', prompt: 'Is this statement true or false? The 1 in 150 has a value of 100.', activity: 'true-false', solution: 'True' },
+                    { type: 'we-do', id: 'd1_w_do_9', prompt: 'The digit <strong>8</strong> in 888 in the hundreds place is worth ___?', activity: 'text-box', solution: '800' },
+                    { type: 'we-do', id: 'd1_w_do_10', prompt: 'Drag the digits of <strong>813</strong> to the correct places.', activity: 'drag-drop-labeling', items: ['8', '1', '3'], targets: ['Hundreds', 'Tens', 'Ones'], solution: { 'Hundreds': '8', 'Tens': '1', 'Ones': '3' } },
+                    { type: 'you-do', id: 'd1_y_do_1', prompt: 'In 903, what is the value of the 9?', activity: 'multiple-choice', options: ['9', '90', '900'], solution: '900' },
+                    { type: 'you-do', id: 'd1_y_do_2', prompt: 'The digit <strong>4</strong> in 345 is in which place?', activity: 'text-box', solution: 'tens' },
+                    { type: 'you-do', id: 'd1_y_do_3', prompt: 'Drag the digits of <strong>158</strong> to their places.', activity: 'drag-drop-labeling', items: ['1', '5', '8'], targets: ['Hundreds', 'Tens', 'Ones'], solution: { 'Hundreds': '1', 'Tens': '5', 'Ones': '8' } },
+                    { type: 'you-do', id: 'd1_y_do_4', prompt: 'What is the value of the underlined digit: <u>7</u>21?', activity: 'multiple-choice', options: ['7', '70', '700'], solution: '700' },
+                    { type: 'you-do', id: 'd1_y_do_5', prompt: 'Is this statement true or false? In the number 555, all the digits have the same value.', activity: 'true-false', solution: 'False' },
+                ],
+                practice: {
+                    title: "Evidence Locker: Place Value Practice",
+                    levels: {
+                        1: { name: "Approaching", questions: [
+                            { id: 'd1_p_l1_1', type: 'multiple-choice', prompt: 'Which number has a 2 in the tens place?', options: ['132', '205', '420'], solution: '420' },
+                            { id: 'd1_p_l1_2', type: 'multiple-choice', prompt: 'In 345, what is the digit in the hundreds place?', options: ['3', '4', '5'], solution: '3' },
+                            { id: 'd1_p_l1_3', type: 'true-false', prompt: 'In 123, the 1 means 100.', solution: 'True' },
+                            { id: 'd1_p_l1_4', type: 'drag-drop-labeling', prompt: 'Match the digit to its place in <strong>281</strong>.', items: ['2', '8', '1'], targets: ['Hundreds', 'Tens', 'Ones'], solution: { 'Hundreds': '2', 'Tens': '8', 'Ones': '1' } },
+                            { id: 'd1_p_l1_5', type: 'multiple-choice', prompt: 'What is the value of the 5 in 59?', options: ['5', '50', '500'], solution: '50' },
+                            { id: 'd1_p_l1_6', type: 'multiple-choice', prompt: 'Which number has a 9 in the ones place?', options: ['91', '19', '90'], solution: '19' },
+                            { id: 'd1_p_l1_7', type: 'true-false', prompt: 'In 407, the value of the 7 is 70.', solution: 'False' },
+                            { id: 'd1_p_l1_8', type: 'multiple-choice', prompt: 'In 186, what is the digit in the tens place?', options: ['1', '8', '6'], solution: '8' },
+                            { id: 'd1_p_l1_9', type: 'drag-drop-labeling', prompt: 'Match the digit to its place in <strong>409</strong>.', items: ['4', '0', '9'], targets: ['Hundreds', 'Tens', 'Ones'], solution: { 'Hundreds': '4', 'Tens': '0', 'Ones': '9' } },
+                            { id: 'd1_p_l1_10', type: 'multiple-choice', prompt: 'What is the value of the 3 in 300?', options: ['3', '30', '300'], solution: '300' },
+                            { id: 'd1_p_l1_11', type: 'true-false', prompt: 'The number 25 has 5 tens.', solution: 'False' },
+                            { id: 'd1_p_l1_12', type: 'multiple-choice', prompt: 'Which number has a 1 in the hundreds place?', options: ['123', '213', '321'], solution: '123' },
+                            { id: 'd1_p_l1_13', type: 'drag-drop-labeling', prompt: 'Match the digit to its place in <strong>112</strong>.', items: ['1 (hundreds)', '1 (tens)', '2'], targets: ['Hundreds', 'Tens', 'Ones'], solution: { 'Hundreds': '1 (hundreds)', 'Tens': '1 (tens)', 'Ones': '2' } },
+                            { id: 'd1_p_l1_14', type: 'multiple-choice', prompt: 'In 27, what is the value of the 7?', options: ['7', '70', '700'], solution: '7' },
+                            { id: 'd1_p_l1_15', type: 'true-false', prompt: 'In 500, there are 5 hundreds.', solution: 'True' },
+                            { id: 'd1_p_l1_16', type: 'multiple-choice', prompt: 'What is the digit in the ones place in 482?', options: ['4', '8', '2'], solution: '2' },
+                            { id: 'd1_p_l1_17', type: 'drag-drop-labeling', prompt: 'Match the digit to its place in <strong>350</strong>.', items: ['3', '5', '0'], targets: ['Hundreds', 'Tens', 'Ones'], solution: { 'Hundreds': '3', 'Tens': '5', 'Ones': '0' } },
+                            { id: 'd1_p_l1_18', type: 'multiple-choice', prompt: 'Which number has a 0 in the tens place?', options: ['120', '201', '210'], solution: '201' },
+                            { id: 'd1_p_l1_19', type: 'true-false', prompt: 'The value of 8 in 82 is 8.', solution: 'False' },
+                            { id: 'd1_p_l1_20', type: 'drag-drop-labeling', prompt: 'Match the digit to its place in <strong>500</strong>.', items: ['5', '0 (tens)', '0 (ones)'], targets: ['Hundreds', 'Tens', 'Ones'], solution: { 'Hundreds': '5', 'Tens': '0 (tens)', 'Ones': '0 (ones)' } },
+                        ]},
+                        2: { name: "On Level", questions: [
+                            { id: 'd1_p_l2_1', type: 'text-box', prompt: 'In the number 388, what is the value of the first 8?', solution: '80' },
+                            { id: 'd1_p_l2_2', type: 'multiple-choice', prompt: 'How many tens are in 470?', options: ['4', '7', '47'], solution: '47' },
+                            { id: 'd1_p_l2_3', type: 'multi-select', prompt: 'Select all numbers with a 7 in the tens place.', options: ['710', '170', '77', '275'], solution: ['170', '77', '275'] },
+                            { id: 'd1_p_l2_4', type: 'drag-drop-sorting', prompt: 'Sort these numbers by the digit in their hundreds place.', items: ['345', '199', '312', '250'], targets: ['100s', '200s', '300s'], solution: { '100s': ['199'], '200s': ['250'], '300s': ['345', '312'] } },
+                            { id: 'd1_p_l2_5', type: 'text-box', prompt: 'What is the value of the 2 in 222?', solution: '200' },
+                            { id: 'd1_p_l2_6', type: 'multiple-choice', prompt: 'Which number is the same as 5 hundreds, 2 tens, and 9 ones?', options: ['529', '925', '259'], solution: '529' },
+                            { id: 'd1_p_l2_7', type: 'multi-select', prompt: 'Select all numbers that have a value of 60 in them.', options: ['61', '160', '601', '6'], solution: ['61', '160'] },
+                            { id: 'd1_p_l2_8', type: 'text-box', prompt: 'How many times greater is the 6 in 600 than the 6 in 60?', solution: '10' },
+                            { id: 'd1_p_l2_9', type: 'drag-drop-sorting', prompt: 'Sort these numbers by the digit in their ones place.', items: ['123', '456', '789', '126'], targets: ['Ends in 3', 'Ends in 6', 'Ends in 9'], solution: { 'Ends in 3': ['123'], 'Ends in 6': ['456', '126'], 'Ends in 9': ['789'] } },
+                            { id: 'd1_p_l2_10', type: 'text-box', prompt: 'Write the number that has 8 hundreds, 0 tens, and 5 ones.', solution: '805' },
+                            { id: 'd1_p_l2_11', type: 'multiple-choice', prompt: 'In 777, the value of the 7 in the tens place is...', options: ['7', '70', '700'], solution: '70' },
+                            { id: 'd1_p_l2_12', type: 'text-box', prompt: 'I have 15 tens and 3 ones. What number am I?', solution: '153' },
+                            { id: 'd1_p_l2_13', type: 'multi-select', prompt: 'Select all numbers where the hundreds digit is greater than the ones digit.', options: ['421', '124', '888', '901'], solution: ['421', '901'] },
+                            { id: 'd1_p_l2_14', type: 'drag-drop-sorting', prompt: 'Sort these numbers by the digit in their tens place.', items: ['150', '510', '115', '252'], targets: ['1 ten', '5 tens'], solution: { '1 ten': ['510', '115'], '5 tens': ['150', '252'] } },
+                            { id: 'd1_p_l2_15', type: 'text-box', prompt: 'What is the number if it has 3 hundreds and 12 ones?', solution: '312' },
+                            { id: 'd1_p_l2_16', type: 'multiple-choice', prompt: 'The number 980 has how many tens?', options: ['8', '98', '9'], solution: '98' },
+                            { id: 'd1_p_l2_17', type: 'text-box', prompt: 'What is the value of the 0 in 409?', solution: '0' },
+                            { id: 'd1_p_l2_18', type: 'multi-select', prompt: 'Select all numbers with a value of 300.', options: ['301', '130', '399', '300'], solution: ['301', '399', '300'] },
+                            { id: 'd1_p_l2_19', type: 'drag-drop-sorting', prompt: 'Sort numbers into "hundreds digit is even" and "hundreds digit is odd".', items: ['245', '311', '850', '900'], targets: ['Even', 'Odd'], solution: { 'Even': ['245', '850'], 'Odd': ['311', '900'] } },
+                            { id: 'd1_p_l2_20', type: 'text-box', prompt: 'Write 4 hundreds, 14 tens, and 6 ones as a number.', solution: '546' },
+                        ]},
+                        3: { name: "Exceeding", questions: [
+                            { id: 'd1_p_l3_1', type: 'text-box', prompt: 'I am a 3-digit number. My tens digit is 4. My hundreds digit is 2 more than my tens digit. My ones digit is the smallest odd number. What number am I?', solution: '641' },
+                            { id: 'd1_p_l3_2', type: 'evidence-based', partA: { prompt: 'Which number matches the clues: The hundreds digit is the sum of 2 and 3. The tens digit is double the ones digit. The ones digit is 4.', options: ['548', '584', '234'] }, partB: { prompt: 'Which clue was most helpful to solve Part A first?', options: ['The hundreds digit clue', 'The tens digit clue', 'The ones digit clue'] }, solution: { partA: '584', partB: 'The ones digit clue' } },
+                            { id: 'd1_p_l3_3', type: 'text-box', prompt: 'Create a 3-digit number where the tens digit is double the ones digit and the hundreds digit is the greatest even digit.', solution: '842' }, // Multiple possible answers
+                            { id: 'd1_p_l3_4', type: 'drag-drop-creation', prompt: 'Use the digits 7, 1, and 8 to make the largest possible number.', items: ['7', '1', '8'], targets: ['Hundreds', 'Tens', 'Ones'], solution: { 'Hundreds': '8', 'Tens': '7', 'Ones': '1' } },
+                            { id: 'd1_p_l3_5', type: 'multiple-choice', prompt: 'If you have 2 hundreds, 15 tens, and 12 ones, what is your number?', options: ['262', '362', '352'], solution: '362' },
+                            { id: 'd1_p_l3_6', type: 'text-box', prompt: 'How much would you need to add to 450 to change the 5 to a 6?', solution: '10' },
+                            { id: 'd1_p_l3_7', type: 'evidence-based', partA: { prompt: 'A number has a 9 in the hundreds place. The tens digit is 3 less than the hundreds. The ones digit is 3 less than the tens. What is the number?', options: ['936', '963', '639'] }, partB: { prompt: 'What is the value of the tens digit?', options: ['3', '30', '60'] }, solution: { partA: '963', partB: '60' } },
+                            { id: 'd1_p_l3_8', type: 'text-box', prompt: 'I am a number between 500 and 600. My ones digit is 7. My tens digit is 2. What number am I?', solution: '527' },
+                            { id: 'd1_p_l3_9', type: 'drag-drop-creation', prompt: 'Use the digits 0, 5, and 2 to make the smallest possible 3-digit number.', items: ['0', '5', '2'], targets: ['Hundreds', 'Tens', 'Ones'], solution: { 'Hundreds': '2', 'Tens': '0', 'Ones': '5' } },
+                            { id: 'd1_p_l3_10', type: 'multiple-choice', prompt: 'What is the difference between the value of the 8 in 800 and the value of the 8 in 80?', options: ['72', '720', '880'], solution: '720' },
+                            { id: 'd1_p_l3_11', type: 'text-box', prompt: 'Write a 3-digit number where the digits sum to 20.', solution: '992' }, // Multiple possible answers
+                            { id: 'd1_p_l3_12', type: 'evidence-based', partA: { prompt: 'In which number does the 4 have a value that is 10 times the value of the 4 in 141?', options: ['420', '24', '41'] }, partB: { prompt: 'Why is your answer correct?', options: ['Because it is in the hundreds place.', 'Because it is in the ones place.', 'Because it is in the tens place.'] }, solution: { partA: '420', partB: 'Because it is in the hundreds place.' } },
+                            { id: 'd1_p_l3_13', type: 'text-box', prompt: 'What is the largest 3-digit number you can make with only even digits? (Digits can repeat)', solution: '888' },
+                            { id: 'd1_p_l3_14', type: 'drag-drop-creation', prompt: 'Make a number where the hundreds value is 500 and the ones digit is 2. The tens digit is your choice from the remaining items.', items: ['5', '2', '8', '1'], targets: ['Hundreds', 'Tens', 'Ones'], solution: { 'Hundreds': '5', 'Tens': '8', 'Ones': '2' } }, // Example solution
+                            { id: 'd1_p_l3_15', type: 'multiple-choice', prompt: 'A baker has 4 boxes of 100 cookies, 8 boxes of 10 cookies, and 3 single cookies. How many cookies does she have?', options: ['483', '4083', '384'], solution: '483' },
+                            { id: 'd1_p_l3_16', type: 'text-box', prompt: 'I am a 3-digit number. All my digits are the same. The sum of my digits is 12. What number am I?', solution: '444' },
+                            { id: 'd1_p_l3_17', type: 'evidence-based', partA: { prompt: 'Which number has a tens digit that is the difference between 9 and 5?', options: ['129', '241', '954'] }, partB: { prompt: 'What is the value of that tens digit?', options: ['4', '40', '50'] }, solution: { partA: '241', partB: '40' } },
+                            { id: 'd1_p_l3_18', type: 'text-box', prompt: 'What is the smallest 3-digit number you can make with only odd digits? (Digits cannot repeat)', solution: '135' },
+                            { id: 'd1_p_l3_19', type: 'drag-drop-creation', prompt: 'Use the digits 3, 4, 5 to make a number where the tens digit is the smallest.', items: ['3', '4', '5'], targets: ['Hundreds', 'Tens', 'Ones'], solution: { 'Hundreds': '5', 'Tens': '3', 'Ones': '4' } }, // or 435
+                            { id: 'd1_p_l3_20', type: 'multiple-choice', prompt: 'How many ones are in the number 230?', options: ['0', '30', '230'], solution: '230' },
+                        ]},
+                    }
+                }
+            },
+            2: {
+                title: "Day 2: The Greater Number Heist",
+                lesson: [
+                    { type: 'hook', title: 'Hook: The Candy Caper', content: "Our mission is to find out which bag of candy costs more. One is <strong>$352</strong> and the other is <strong>$325</strong>. They have the same digits! Is this a trick? How can we figure out the truth?" },
+                    { type: 'demo', title: 'Demonstration: The Alligator Mouth', content: "To solve this, we start with the most powerful place: the hundreds! If they're the same, we move to the tens. The greater than (>) and less than (<) symbols are like alligator mouths—they always want to chomp the bigger number!" },
+                    { type: 'i-do', id: 'd2_i_do_1', prompt: 'Drag the correct symbol to compare <strong>450</strong> and <strong>425</strong>.', activity: 'drag-drop-symbol', items: ['>', '<', '='], solution: '>' },
+                    { type: 'i-do', id: 'd2_i_do_2', prompt: 'Is this statement true? <strong>812 > 821</strong>', activity: 'true-false', solution: 'False' },
+                    { type: 'i-do', id: 'd2_i_do_3', prompt: 'Which symbol makes the statement true? <strong>234 ___ 199</strong>', activity: 'multiple-choice', options: ['>', '<', '='], solution: '>' },
+                    { type: 'we-do', id: 'd2_w_do_1', prompt: 'Compare: <strong>582 ___ 582</strong>', activity: 'multiple-choice', options: ['>', '<', '='], solution: '=' },
+                    { type: 'we-do', id: 'd2_w_do_2', prompt: 'Compare: <strong>123 ___ 321</strong>', activity: 'text-box', solution: '<' },
+                    { type: 'we-do', id: 'd2_w_do_3', prompt: 'True or False: <strong>750 > 705</strong>', activity: 'true-false', solution: 'True' },
+                    { type: 'we-do', id: 'd2_w_do_4', prompt: 'Drag the symbol: <strong>99 ___ 101</strong>', activity: 'drag-drop-symbol', items: ['>', '<', '='], solution: '<' },
+                    { type: 'we-do', id: 'd2_w_do_5', prompt: 'Compare: <strong>654 ___ 645</strong>', activity: 'multiple-choice', options: ['>', '<', '='], solution: '>' },
+                    { type: 'we-do', id: 'd2_w_do_6', prompt: 'Compare: <strong>209 ___ 290</strong>', activity: 'text-box', solution: '<' },
+                    { type: 'we-do', id: 'd2_w_do_7', prompt: 'True or False: <strong>400 < 399</strong>', activity: 'true-false', solution: 'False' },
+                    { type: 'we-do', id: 'd2_w_do_8', prompt: 'Drag the symbol: <strong>888 ___ 887</strong>', activity: 'drag-drop-symbol', items: ['>', '<', '='], solution: '>' },
+                    { type: 'we-do', id: 'd2_w_do_9', prompt: 'Compare: <strong>347 ___ 347</strong>', activity: 'multiple-choice', options: ['>', '<', '='], solution: '=' },
+                    { type: 'we-do', id: 'd2_w_do_10', prompt: 'Compare: <strong>515 ___ 551</strong>', activity: 'text-box', solution: '<' },
+                    { type: 'you-do', id: 'd2_y_do_1', prompt: 'Compare: <strong>987 ___ 789</strong>', activity: 'multiple-choice', options: ['>', '<', '='], solution: '>' },
+                    { type: 'you-do', id: 'd2_y_do_2', prompt: 'True or False: <strong>112 < 121</strong>', activity: 'true-false', solution: 'True' },
+                    { type: 'you-do', id: 'd2_y_do_3', prompt: 'Drag the symbol: <strong>456 ___ 456</strong>', activity: 'drag-drop-symbol', items: ['>', '<', '='], solution: '=' },
+                    { type: 'you-do', id: 'd2_y_do_4', prompt: 'Compare: <strong>808 ___ 880</strong>', activity: 'text-box', solution: '<' },
+                    { type: 'you-do', id: 'd2_y_do_5', prompt: 'Compare: <strong>231 ___ 132</strong>', activity: 'multiple-choice', options: ['>', '<', '='], solution: '>' },
+                ],
+                practice: {
+                    title: "Evidence Locker: Comparison Practice",
+                    levels: {
+                        1: { name: "Approaching", questions: [/* 20 questions */] },
+                        2: { name: "On Level", questions: [/* 20 questions */] },
+                        3: { name: "Exceeding", questions: [/* 20 questions */] },
+                    }
+                }
+            },
+            3: {
+                title: "Day 3: Line Up the Suspects",
+                lesson: [
+                    { type: 'hook', title: 'Hook: Game Show Scores!', content: "Here are the scores from the video game championship. Sara: <strong>480</strong>, Ben: <strong>452</strong>, Maria: <strong>510</strong>. Who came in 1st, 2nd, and 3rd place? How can we be sure?" },
+                    { type: 'demo', title: 'Demonstration: Ordering the Evidence', content: "To order numbers, we find the smallest one first. Look at the hundreds digit. The smallest hundred is the first number in our lineup. Then we look at the remaining numbers and do it again!" },
+                    { type: 'i-do', id: 'd3_i_do_1', prompt: 'Order these numbers from least to greatest: <strong>515, 289, 530</strong>', activity: 'drag-drop-sorting-list', items: ['515', '289', '530'], solution: ['289', '515', '530'] },
+                    { type: 'i-do', id: 'd3_i_do_2', prompt: 'Which set is in order from least to greatest?', activity: 'multiple-choice', options: ['123, 132, 213', '213, 132, 123', '132, 123, 213'], solution: '123, 132, 213' },
+                    { type: 'i-do', id: 'd3_i_do_3', prompt: 'Order these numbers from least to greatest: <strong>910, 190, 901</strong>. (Use commas)', activity: 'text-box', solution: '190, 901, 910' },
+                    { type: 'we-do', id: 'd3_w_do_1', prompt: 'Order: <strong>100, 300, 200</strong>', activity: 'text-box', solution: '100, 200, 300' },
+                    { type: 'we-do', id: 'd3_w_do_2', prompt: 'Which set is ordered correctly?', activity: 'multiple-choice', options: ['450, 440, 460', '440, 450, 460', '460, 450, 440'], solution: '440, 450, 460' },
+                    { type: 'we-do', id: 'd3_w_do_3', prompt: 'Drag to order: <strong>789, 879, 798</strong>', activity: 'drag-drop-sorting-list', items: ['789', '879', '798'], solution: ['789', '798', '879'] },
+                    { type: 'we-do', id: 'd3_w_do_4', prompt: 'True or False: 505, 550, 515 is in order.', activity: 'true-false', solution: 'False' },
+                    { type: 'we-do', id: 'd3_w_do_5', prompt: 'Order: <strong>212, 122, 221</strong>', activity: 'text-box', solution: '122, 212, 221' },
+                    { type: 'we-do', id: 'd3_w_do_6', prompt: 'Which set is ordered correctly?', activity: 'multiple-choice', options: ['801, 810, 800', '800, 810, 801', '800, 801, 810'], solution: '800, 801, 810' },
+                    { type: 'we-do', id: 'd3_w_do_7', prompt: 'Drag to order: <strong>345, 453, 354</strong>', activity: 'drag-drop-sorting-list', items: ['345', '453', '354'], solution: ['345', '354', '453'] },
+                    { type: 'we-do', id: 'd3_w_do_8', prompt: 'Order: <strong>99, 909, 199</strong>', activity: 'text-box', solution: '99, 199, 909' },
+                    { type: 'we-do', id: 'd3_w_do_9', prompt: 'True or False: 678, 789, 890 is in order.', activity: 'true-false', solution: 'True' },
+                    { type: 'we-do', id: 'd3_w_do_10', prompt: 'Drag to order: <strong>607, 706, 670</strong>', activity: 'drag-drop-sorting-list', items: ['607', '706', '670'], solution: ['607', '670', '706'] },
+                    { type: 'you-do', id: 'd3_y_do_1', prompt: 'Order: <strong>410, 140, 401</strong>', activity: 'text-box', solution: '140, 401, 410' },
+                    { type: 'you-do', id: 'd3_y_do_2', prompt: 'Which set is ordered correctly?', activity: 'multiple-choice', options: ['234, 243, 324', '324, 243, 234', '243, 234, 324'], solution: '234, 243, 324' },
+                    { type: 'you-do', id: 'd3_y_do_3', prompt: 'Drag to order: <strong>889, 898, 988</strong>', activity: 'drag-drop-sorting-list', items: ['889', '898', '988'], solution: ['889', '898', '988'] },
+                    { type: 'you-do', id: 'd3_y_do_4', prompt: 'True or False: 101, 110, 111 is in order.', activity: 'true-false', solution: 'True' },
+                    { type: 'you-do', id: 'd3_y_do_5', prompt: 'Order: <strong>758, 578, 875</strong>', activity: 'text-box', solution: '578, 758, 875' },
+                ],
+                practice: {
+                    title: "Evidence Locker: Ordering Practice",
+                    levels: {
+                        1: { name: "Approaching", questions: [/* 20 questions */] },
+                        2: { name: "On Level", questions: [/* 20 questions */] },
+                        3: { name: "Exceeding", questions: [/* 20 questions */] },
+                    }
+                }
+            },
+            4: {
+                title: "Day 4: The Case of the Reverse Order",
+                lesson: [
+                    { type: 'hook', title: 'Hook: Finding First Place', content: "Let's look at the game scores again: Sara: <strong>480</strong>, Ben: <strong>452</strong>, Maria: <strong>510</strong>. How would our strategy change if we are looking for the BIGGEST number first to find the 1st place winner?" },
+                    { type: 'demo', title: 'Demonstration: Greatest to Least', content: "Today we're flipping the script! To order from greatest to least, we look for the BIGGEST hundred first. That number goes at the front of the line. Then we find the next biggest, and so on." },
+                    { type: 'i-do', id: 'd4_i_do_1', prompt: 'Order these numbers from greatest to least: <strong>345, 543, 435</strong>', activity: 'drag-drop-sorting-list', items: ['345', '543', '435'], solution: ['543', '435', '345'] },
+                    { type: 'i-do', id: 'd4_i_do_2', prompt: 'Which set is in order from greatest to least?', activity: 'multiple-choice', options: ['987, 897, 789', '789, 897, 987', '987, 789, 897'], solution: '987, 897, 789' },
+                    { type: 'i-do', id: 'd4_i_do_3', prompt: 'Order these numbers from greatest to least: <strong>112, 211, 121</strong>. (Use commas)', activity: 'text-box', solution: '211, 121, 112' },
+                    { type: 'we-do', id: 'd4_w_do_1', prompt: 'Order from greatest to least: <strong>500, 200, 800</strong>', activity: 'text-box', solution: '800, 500, 200' },
+                    { type: 'we-do', id: 'd4_w_do_2', prompt: 'Which set is ordered from greatest to least?', activity: 'multiple-choice', options: ['150, 510, 501', '510, 150, 501', '510, 501, 150'], solution: '510, 501, 150' },
+                    { type: 'we-do', id: 'd4_w_do_3', prompt: 'Drag to order (greatest to least): <strong>234, 432, 324</strong>', activity: 'drag-drop-sorting-list', items: ['234', '432', '324'], solution: ['432', '324', '234'] },
+                    { type: 'we-do', id: 'd4_w_do_4', prompt: 'True or False: 990, 909, 99 is in order (greatest to least).', activity: 'true-false', solution: 'True' },
+                    { type: 'we-do', id: 'd4_w_do_5', prompt: 'Order from greatest to least: <strong>675, 765, 567</strong>', activity: 'text-box', solution: '765, 675, 567' },
+                    { type: 'we-do', id: 'd4_w_do_6', prompt: 'READ CAREFULLY! Order from LEAST to greatest: <strong>543, 345, 435</strong>', activity: 'text-box', solution: '345, 435, 543' },
+                    { type: 'we-do', id: 'd4_w_do_7', prompt: 'Drag to order (greatest to least): <strong>101, 110, 100</strong>', activity: 'drag-drop-sorting-list', items: ['101', '110', '100'], solution: ['110', '101', '100'] },
+                    { type: 'we-do', id: 'd4_w_do_8', prompt: 'Which set is ordered from greatest to least?', activity: 'multiple-choice', options: ['821, 812, 218', '218, 812, 821', '812, 821, 218'], solution: '821, 812, 218' },
+                    { type: 'we-do', id: 'd4_w_do_9', prompt: 'True or False: 445, 454, 544 is in order (greatest to least).', activity: 'true-false', solution: 'False' },
+                    { type: 'we-do', id: 'd4_w_do_10', prompt: 'READ CAREFULLY! Order from LEAST to greatest: <strong>708, 807, 780</strong>', activity: 'text-box', solution: '708, 780, 807' },
+                    { type: 'you-do', id: 'd4_y_do_1', prompt: 'Order from greatest to least: <strong>199, 919, 991</strong>', activity: 'text-box', solution: '991, 919, 199' },
+                    { type: 'you-do', id: 'd4_y_do_2', prompt: 'Which set is ordered from greatest to least?', activity: 'multiple-choice', options: ['302, 230, 320', '320, 302, 230', '230, 302, 320'], solution: '320, 302, 230' },
+                    { type: 'you-do', id: 'd4_y_do_3', prompt: 'Drag to order (greatest to least): <strong>560, 650, 506</strong>', activity: 'drag-drop-sorting-list', items: ['560', '650', '506'], solution: ['650', '560', '506'] },
+                    { type: 'you-do', id: 'd4_y_do_4', prompt: 'True or False: 888, 88, 8 is in order (greatest to least).', activity: 'true-false', solution: 'True' },
+                    { type: 'you-do', id: 'd4_y_do_5', prompt: 'Order from LEAST to greatest: <strong>472, 274, 427</strong>', activity: 'text-box', solution: '274, 427, 472' },
+                ],
+                practice: {
+                    title: "Evidence Locker: Final Lineup",
+                    levels: {
+                        1: { name: "Approaching", questions: [/* 20 questions */] },
+                        2: { name: "On Level", questions: [/* 20 questions */] },
+                        3: { name: "Exceeding", questions: [/* 20 questions */] },
+                    }
+                }
+            }
+        };
+
+        //======================================================================
+        // 2. STATE MANAGEMENT: Tracks user progress and answers
+        //======================================================================
+        let appState = {
+            currentDay: 1,
+            currentMode: 'lesson', // 'lesson' or 'practice'
+            lessonProgress: { 1: 0, 2: 0, 3: 0, 4: 0 },
+            practiceLevel: { 1: 1, 2: 1, 3: 1, 4: 1 },
+            practiceProgress: { 1: 0, 2: 0, 3: 0, 4: 0 },
+            answers: {}, // e.g., { 'd1_i_do_1': { value: '...', correct: true } }
+        };
+
+        //======================================================================
+        // 3. CORE APPLICATION LOGIC
+        //======================================================================
+        
+        // --- Positive/Negative Feedback Messages ---
+        const positiveFeedback = ["Case closed! Excellent work.", "You've cracked it, Detective!", "A-ha! You found the right clue.", "Great deduction!"];
+        const negativeFeedback = ["Not quite. Let's re-examine the evidence.", "Hmm, a tricky clue. Try looking at the hundreds place first.", "Let's try another angle on this mystery."];
+        let draggedItem = null;
+
+        /**
+         * Initializes the application, loads state, and renders the initial view.
+         */
+        function initialize() {
+            loadState();
+            render();
+            setupEventListeners();
+        }
+
+        /**
+         * Main render function. Clears content and re-renders based on current state.
+         */
+        function render() {
+            const contentArea = document.getElementById('content-area');
+            contentArea.innerHTML = ''; // Clear previous content
+
+            renderDayTabs();
+            renderModeSwitcher();
+            
+            const dayData = lessonData[appState.currentDay];
+            if (!dayData) {
+                contentArea.innerHTML = `<p>Error: Case file for Day ${appState.currentDay} not found.</p>`;
+                return;
+            }
+
+            if (appState.currentMode === 'lesson') {
+                renderLesson(dayData);
+            } else {
+                renderPracticeCenter(dayData);
+            }
+            
+            // After rendering, re-apply saved answers for complex types like drag-and-drop
+            rehydrateInteractiveElements();
+        }
+
+        /**
+         * Renders the top-level day navigation tabs.
+         */
+        function renderDayTabs() {
+            const tabsContainer = document.getElementById('day-tabs');
+            tabsContainer.innerHTML = '';
+            for (let i = 1; i <= 4; i++) {
+                const button = document.createElement('button');
+                button.textContent = `Day ${i}`;
+                button.dataset.day = i;
+                button.className = `px-4 py-2 rounded-t-lg font-bold transition-all duration-300 ${appState.currentDay == i ? 'tab-active' : 'tab-inactive'}`;
+                tabsContainer.appendChild(button);
+            }
+        }
+
+        /**
+         * Renders the button to switch between lesson and practice center.
+         */
+        function renderModeSwitcher() {
+            const switcherContainer = document.getElementById('mode-switcher');
+            switcherContainer.innerHTML = '';
+            if (appState.currentMode === 'practice') {
+                const button = document.createElement('button');
+                button.textContent = 'Back to Lesson';
+                button.className = 'mode-switch-btn to-lesson bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg';
+                switcherContainer.appendChild(button);
+            }
+        }
+        
+        /**
+         * Renders the lesson view for the current day.
+         */
+        function renderLesson(dayData) {
+            const contentArea = document.getElementById('content-area');
+            const slideIndex = appState.lessonProgress[appState.currentDay];
+            const slideData = dayData.lesson[slideIndex];
+
+            let slideHTML = `<div class="slide active p-4 border rounded-lg bg-gray-50">`;
+            
+            // Progress Bar
+            const progressPercent = ((slideIndex + 1) / dayData.lesson.length) * 100;
+            slideHTML += `
+                <div class="mb-4 no-print">
+                    <p class="font-bold text-gray-700">Case Progress:</p>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar h-4" style="width: ${progressPercent}%;"></div>
+                    </div>
+                </div>
+            `;
+
+            if (slideData.title) {
+                slideHTML += `<h2 class="text-2xl font-bold text-gray-800 mb-2 font-title">${slideData.title}</h2>`;
+            }
+            if (slideData.content) {
+                slideHTML += `<div class="text-lg text-gray-700 prose max-w-none">${slideData.content}</div>`;
+            }
+            
+            // Render the interactive activity if it exists
+            if (slideData.activity) {
+                slideHTML += renderActivity(slideData);
+            }
+
+            slideHTML += '</div>'; // close slide div
+            
+            // Navigation
+            slideHTML += `<div class="flex justify-between mt-6 no-print">`;
+            if (slideIndex > 0) {
+                slideHTML += `<button class="nav-btn prev-btn bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg">Previous Clue</button>`;
+            } else {
+                slideHTML += `<div></div>`; // for spacing
+            }
+
+            if (slideIndex < dayData.lesson.length - 1) {
+                slideHTML += `<button class="nav-btn next-btn bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">Next Clue</button>`;
+            } else {
+                // Last slide of the lesson
+                slideHTML += `<button class="mode-switch-btn to-practice bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-6 rounded-lg">Go to Evidence Locker</button>`;
+            }
+            slideHTML += `</div>`;
+
+            contentArea.innerHTML = slideHTML;
+        }
+
+        /**
+         * Renders a single interactive activity based on its type.
+         */
+        function renderActivity(activityData) {
+            let activityHTML = `<div class="mt-4 p-4 border-2 border-gray-300 rounded-lg bg-white shadow-md" data-activity-id="${activityData.id}">`;
+            activityHTML += `<div class="font-bold text-lg mb-4">${activityData.prompt}</div>`;
+            
+            const savedAnswer = appState.answers[activityData.id];
+
+            switch(activityData.activity) {
+                case 'multiple-choice':
+                    activityHTML += `<div class="space-y-2">`;
+                    activityData.options.forEach(option => {
+                        const isChecked = savedAnswer && savedAnswer.value === option;
+                        activityHTML += `
+                            <label class="flex items-center p-3 border rounded-lg hover:bg-gray-100 cursor-pointer">
+                                <input type="radio" name="${activityData.id}" value="${option}" class="mr-3" ${isChecked ? 'checked' : ''}>
+                                ${option}
+                            </label>`;
+                    });
+                    activityHTML += `</div>`;
+                    break;
+                
+                case 'true-false':
+                     activityHTML += `<div class="space-y-2">
+                        <label class="flex items-center p-3 border rounded-lg hover:bg-gray-100 cursor-pointer">
+                            <input type="radio" name="${activityData.id}" value="True" class="mr-3" ${savedAnswer && savedAnswer.value === 'True' ? 'checked' : ''}> True
+                        </label>
+                        <label class="flex items-center p-3 border rounded-lg hover:bg-gray-100 cursor-pointer">
+                            <input type="radio" name="${activityData.id}" value="False" class="mr-3" ${savedAnswer && savedAnswer.value === 'False' ? 'checked' : ''}> False
+                        </label>
+                    </div>`;
+                    break;
+                
+                case 'text-box':
+                    const textValue = savedAnswer ? savedAnswer.value : '';
+                    activityHTML += `<input type="text" class="w-full p-2 border border-gray-400 rounded-lg" value="${textValue}" placeholder="Type your answer here...">`;
+                    break;
+                
+                case 'drag-drop-symbol':
+                case 'drag-drop-sorting-list':
+                case 'drag-drop-labeling':
+                    let sourceItems = [...activityData.items];
+                    let dropTargetsHTML = '';
+
+                    if (activityData.activity === 'drag-drop-sorting-list') {
+                        dropTargetsHTML = `<div class="flex-grow space-y-2" id="drop-target-container-${activityData.id}">
+                            ${sourceItems.map((_, index) => `<div class="drop-zone flex-grow p-2 rounded-lg" data-target="${index}"></div>`).join('')}
+                        </div>`;
+                    } else if (activityData.activity === 'drag-drop-labeling') {
+                         dropTargetsHTML = `<div class="flex-grow space-y-2">
+                            ${activityData.targets.map(target => `
+                                <div class="flex items-center gap-2">
+                                    <span class="font-bold w-24 text-right">${target}:</span>
+                                    <div class="drop-zone flex-grow p-2 rounded-lg" data-target="${target}"></div>
+                                </div>
+                            `).join('')}
+                        </div>`;
+                    } else { // drag-drop-symbol
+                        dropTargetsHTML = `<div class="drop-zone flex-grow p-2 rounded-lg" data-target="symbol"></div>`;
+                    }
+
+                    activityHTML += `<div class="flex flex-col sm:flex-row gap-4">
+                        <div class="p-2 border rounded-lg bg-gray-100 flex flex-wrap gap-2 justify-center" id="draggable-source-${activityData.id}">
+                            ${sourceItems.map(item => `<div class="draggable bg-blue-500 text-white p-2 rounded-md shadow-sm" draggable="true" data-value="${item}">${item}</div>`).join('')}
+                        </div>
+                        ${dropTargetsHTML}
+                    </div>`;
+                    break;
+            }
+
+            // Feedback and Check Answer Button
+            const feedback = savedAnswer ? (savedAnswer.correct ? `<div class="feedback correct">${getRandomItem(positiveFeedback)}</div>` : `<div class="feedback incorrect">${getRandomItem(negativeFeedback)}</div>`) : '<div class="feedback"></div>';
+            
+            activityHTML += `
+                <div class="mt-4 text-center">
+                    <button class="check-answer-btn bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-6 rounded-lg no-print">Crack the Code</button>
+                </div>
+                ${feedback}
+            `;
+
+            activityHTML += '</div>';
+            return activityHTML;
+        }
+
+        /**
+         * Renders the practice center view for the current day.
+         */
+        function renderPracticeCenter(dayData) {
+            const contentArea = document.getElementById('content-area');
+            const level = appState.practiceLevel[appState.currentDay];
+            const levelData = dayData.practice.levels[level];
+            const questionIndex = appState.practiceProgress[appState.currentDay];
+            const questionData = levelData.questions[questionIndex];
+
+            let practiceHTML = `<div class="p-4">`;
+            practiceHTML += `<h2 class="text-3xl font-bold font-title mb-2 text-center">${dayData.practice.title}</h2>`;
+            
+            // Level Tabs
+            practiceHTML += `<div class="flex justify-center space-x-2 my-4 no-print">`;
+            Object.keys(dayData.practice.levels).forEach(levelKey => {
+                const levelInfo = dayData.practice.levels[levelKey];
+                practiceHTML += `<button class="practice-level-btn px-4 py-2 rounded-lg font-bold ${level == levelKey ? 'bg-amber-500 text-white' : 'bg-gray-200 text-gray-700'}" data-level="${levelKey}">${levelInfo.name}</button>`;
+            });
+            practiceHTML += `</div>`;
+
+            // Render the current question
+            if (questionData) {
+                practiceHTML += renderActivity(questionData);
+            } else {
+                practiceHTML += `<p class="text-center text-lg">You've completed all the questions for this level!</p>`;
+            }
+
+            // Navigation
+            practiceHTML += `<div class="flex justify-between mt-6 no-print">`;
+            if (questionIndex > 0) {
+                practiceHTML += `<button class="practice-nav-btn prev bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg">Previous</button>`;
+            } else {
+                practiceHTML += `<div></div>`;
+            }
+            if (questionIndex < levelData.questions.length - 1) {
+                practiceHTML += `<button class="practice-nav-btn next bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">Next</button>`;
+            }
+            practiceHTML += `</div>`;
+            
+            practiceHTML += `</div>`;
+            contentArea.innerHTML = practiceHTML;
+        }
+        
+        /**
+         * After rendering, re-populate interactive elements like drag-drop from saved state.
+         */
+        function rehydrateInteractiveElements() {
+            Object.keys(appState.answers).forEach(activityId => {
+                const answerData = appState.answers[activityId];
+                const activityContainer = document.querySelector(`[data-activity-id="${activityId}"]`);
+                if (activityContainer && answerData.value && typeof answerData.value === 'object') {
+                    const sourceContainer = document.getElementById(`draggable-source-${activityId}`);
+                    if (!sourceContainer) return;
+                    
+                    const allDraggables = Array.from(sourceContainer.querySelectorAll('.draggable'));
+
+                    if (Array.isArray(answerData.value)) { // For sorting list
+                        answerData.value.forEach((val, index) => {
+                            const dropZone = activityContainer.querySelector(`.drop-zone[data-target="${index}"]`);
+                            const draggableEl = allDraggables.find(d => d.dataset.value === val);
+                            if (dropZone && draggableEl) dropZone.appendChild(draggableEl);
+                        });
+                    } else { // For labeling
+                        Object.keys(answerData.value).forEach(targetKey => {
+                            const droppedValue = answerData.value[targetKey];
+                            const dropZone = activityContainer.querySelector(`.drop-zone[data-target="${targetKey}"]`);
+                            const draggableEl = allDraggables.find(d => d.dataset.value === droppedValue);
+                            if (dropZone && draggableEl) dropZone.appendChild(draggableEl);
+                        });
+                    }
+                }
+            });
+        }
+
+
+        /**
+         * Sets up all the global event listeners for the application.
+         */
+        function setupEventListeners() {
+            const appContainer = document.getElementById('app-container');
+
+            appContainer.addEventListener('click', (e) => {
+                // Day Tab navigation
+                if (e.target.matches('#day-tabs button')) {
+                    appState.currentDay = parseInt(e.target.dataset.day);
+                    appState.currentMode = 'lesson'; // Always start on lesson when switching days
+                    appState.lessonProgress[appState.currentDay] = 0; // Reset progress on switch
+                    render();
+                    saveState();
+                }
+                // Lesson navigation
+                if (e.target.matches('.nav-btn.next-btn')) {
+                    appState.lessonProgress[appState.currentDay]++;
+                    render();
+                    saveState();
+                }
+                if (e.target.matches('.nav-btn.prev-btn')) {
+                    appState.lessonProgress[appState.currentDay]--;
+                    render();
+                    saveState();
+                }
+                // Mode switching
+                if (e.target.matches('.mode-switch-btn')) {
+                    appState.currentMode = e.target.classList.contains('to-practice') ? 'practice' : 'lesson';
+                    render();
+                    saveState();
+                }
+                // Check answer
+                if (e.target.matches('.check-answer-btn')) {
+                    handleCheckAnswer(e.target);
+                }
+                // Practice Level switching
+                if (e.target.matches('.practice-level-btn')) {
+                    appState.practiceLevel[appState.currentDay] = parseInt(e.target.dataset.level);
+                    appState.practiceProgress[appState.currentDay] = 0; // Reset progress
+                    render();
+                    saveState();
+                }
+                // Practice navigation
+                if (e.target.matches('.practice-nav-btn.next')) {
+                    appState.practiceProgress[appState.currentDay]++;
+                    render();
+                    saveState();
+                }
+                if (e.target.matches('.practice-nav-btn.prev')) {
+                    appState.practiceProgress[appState.currentDay]--;
+                    render();
+                    saveState();
+                }
+            });
+            
+            // --- Drag and Drop Event Listeners ---
+            appContainer.addEventListener('dragstart', (e) => {
+                if (e.target.classList.contains('draggable')) {
+                    draggedItem = e.target;
+                    setTimeout(() => e.target.style.opacity = '0.5', 0);
+                }
+            });
+
+            appContainer.addEventListener('dragend', (e) => {
+                if (draggedItem) {
+                    setTimeout(() => {
+                        if(draggedItem) draggedItem.style.opacity = '1';
+                        draggedItem = null;
+                    }, 0);
+                }
+            });
+
+            appContainer.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                const dropZone = e.target.closest('.drop-zone');
+                if (dropZone) {
+                    dropZone.classList.add('drag-over');
+                }
+            });
+
+            appContainer.addEventListener('dragleave', (e) => {
+                const dropZone = e.target.closest('.drop-zone');
+                if (dropZone) {
+                    dropZone.classList.remove('drag-over');
+                }
+            });
+            
+            appContainer.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const dropZone = e.target.closest('.drop-zone');
+                if (dropZone && draggedItem) {
+                    dropZone.classList.remove('drag-over');
+                    // If zone already has an item, swap it back to source
+                    if (dropZone.children.length > 0) {
+                        const activityContainer = dropZone.closest('[data-activity-id]');
+                        const sourceContainer = document.getElementById(`draggable-source-${activityContainer.dataset.activityId}`);
+                        if(sourceContainer) sourceContainer.appendChild(dropZone.children[0]);
+                    }
+                    dropZone.appendChild(draggedItem);
+                }
+            });
+
+            // Download buttons
+            document.getElementById('download-work-btn').addEventListener('click', downloadWork);
+            document.getElementById('download-pdf-btn').addEventListener('click', downloadPDF);
+        }
+
+        /**
+         * Handles the logic when a "Check Answer" button is clicked.
+         */
+        function handleCheckAnswer(button) {
+            const activityContainer = button.closest('[data-activity-id]');
+            if (!activityContainer) return;
+            
+            const activityId = activityContainer.dataset.activityId;
+            const day = activityId.split('_')[0].replace('d','');
+            
+            let activityData = lessonData[day].lesson.find(act => act.id === activityId);
+            if (!activityData) {
+                for (const level in lessonData[day].practice.levels) {
+                    activityData = lessonData[day].practice.levels[level].questions.find(q => q.id === activityId);
+                    if (activityData) break;
+                }
+            }
+            if(!activityData) return;
+
+            let userAnswer;
+            let isCorrect = false;
+
+            switch (activityData.activity) {
+                case 'multiple-choice':
+                case 'true-false':
+                    const selectedRadio = activityContainer.querySelector('input[type="radio"]:checked');
+                    userAnswer = selectedRadio ? selectedRadio.value : null;
+                    isCorrect = userAnswer === activityData.solution;
+                    break;
+                case 'text-box':
+                    const input = activityContainer.querySelector('input[type="text"]');
+                    userAnswer = input ? input.value.trim() : null;
+                    isCorrect = userAnswer && userAnswer.toLowerCase() === activityData.solution.toLowerCase();
+                    break;
+                case 'drag-drop-symbol':
+                    const symbolZone = activityContainer.querySelector('.drop-zone');
+                    userAnswer = symbolZone.children.length > 0 ? symbolZone.children[0].dataset.value : null;
+                    isCorrect = userAnswer === activityData.solution;
+                    break;
+                case 'drag-drop-sorting-list':
+                    const sortedDropZones = activityContainer.querySelectorAll('.drop-zone');
+                    userAnswer = Array.from(sortedDropZones).map(zone => zone.children.length > 0 ? zone.children[0].dataset.value : null);
+                    isCorrect = JSON.stringify(userAnswer) === JSON.stringify(activityData.solution);
+                    break;
+                case 'drag-drop-labeling':
+                    const labelDropZones = activityContainer.querySelectorAll('.drop-zone');
+                    userAnswer = {};
+                    let correctCount = 0;
+                    labelDropZones.forEach(zone => {
+                        const target = zone.dataset.target;
+                        const child = zone.querySelector('.draggable');
+                        const value = child ? child.dataset.value : null;
+                        userAnswer[target] = value;
+                        if (activityData.solution[target] === value) {
+                            correctCount++;
+                        }
+                    });
+                    isCorrect = correctCount === Object.keys(activityData.solution).length;
+                    break;
+            }
+            
+            appState.answers[activityId] = { value: userAnswer, correct: isCorrect };
+            
+            const feedbackEl = activityContainer.querySelector('.feedback');
+            if (isCorrect) {
+                feedbackEl.className = 'feedback correct';
+                feedbackEl.innerHTML = `✅ ${getRandomItem(positiveFeedback)}`;
+            } else {
+                feedbackEl.className = 'feedback incorrect';
+                feedbackEl.innerHTML = `❌ ${getRandomItem(negativeFeedback)} Try again!`;
+            }
+
+            saveState();
+        }
+
+        //======================================================================
+        // 4. UTILITY & HELPER FUNCTIONS
+        //======================================================================
+
+        function getRandomItem(arr) {
+            return arr[Math.floor(Math.random() * arr.length)];
+        }
+
+        //======================================================================
+        // 5. SAVING, LOADING, and EXPORTING
+        //======================================================================
+
+        function saveState() {
+            localStorage.setItem('detectiveAppState', JSON.stringify(appState));
+        }
+
+        function loadState() {
+            const progressDataEl = document.getElementById('progress-data');
+            let loadedState = null;
+
+            if (progressDataEl && progressDataEl.textContent.trim().length > 2) {
+                try {
+                    loadedState = JSON.parse(progressDataEl.textContent);
+                    console.log("Loaded state from embedded data.");
+                } catch (e) { console.error("Could not parse embedded progress data.", e); }
+            } else {
+                const savedState = localStorage.getItem('detectiveAppState');
+                if (savedState) {
+                    try {
+                        loadedState = JSON.parse(savedState);
+                        console.log("Loaded state from localStorage.");
+                    } catch (e) { console.error("Could not parse localStorage state.", e); }
+                }
+            }
+            if (loadedState) { appState = loadedState; }
+        }
+
+        function downloadWork() {
+            const stateString = JSON.stringify(appState);
+            const currentHtml = document.documentElement.outerHTML;
+            const modifiedHtml = currentHtml.replace(
+                /<script id="progress-data" type="application\/json">.*?<\/script>/,
+                `<script id="progress-data" type="application/json">${stateString}<\/script>`
+            );
+            const blob = new Blob([modifiedHtml], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'detective-lesson-progress.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        async function downloadPDF() {
+            const loadingOverlay = document.getElementById('loading-overlay');
+            loadingOverlay.style.display = 'flex';
+
+            const cloneContainer = document.createElement('div');
+            cloneContainer.className = 'pdf-clone-area';
+            cloneContainer.style.position = 'absolute';
+            cloneContainer.style.left = '-9999px';
+            cloneContainer.style.width = '800px';
+            cloneContainer.style.padding = '20px';
+            cloneContainer.style.backgroundColor = 'white';
+            cloneContainer.style.fontFamily = "'Roboto', sans-serif";
+
+            let contentHTML = `<h1 style="font-family: 'Special Elite', cursive; font-size: 24px;">Detective Academy Report</h1>`;
+
+            for (let day = 1; day <= 4; day++) {
+                if (!lessonData[day]) continue;
+                contentHTML += `<h2 style="font-size: 20px; font-weight: bold; margin-top: 24px; border-bottom: 2px solid #ccc; padding-bottom: 8px;">Day ${day}: ${lessonData[day].title.split(':')[1]}</h2>`;
+                
+                const processActivities = (activities, sectionTitle) => {
+                    let sectionHasContent = false;
+                    let sectionHTML = `<h3 style="font-size: 16px; font-weight: bold; margin-top: 16px;">${sectionTitle}</h3>`;
+                    
+                    activities.forEach(activity => {
+                        const answer = appState.answers[activity.id];
+                        if (answer && answer.value !== undefined && answer.value !== null) {
+                            sectionHasContent = true;
+                            let answerText = JSON.stringify(answer.value);
+                            if (typeof answer.value !== 'object' || answer.value === null) {
+                                answerText = answer.value;
+                            } else if (Array.isArray(answer.value)) {
+                                answerText = answer.value.join(', ');
+                            }
+                            else {
+                                answerText = Object.entries(answer.value).map(([key, val]) => `${key}: ${val}`).join('; ');
+                            }
+                            sectionHTML += `<div style="margin-top: 12px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; page-break-inside: avoid;">`;
+                            sectionHTML += `<p style="font-weight: bold;">${activity.prompt.replace(/<[^>]*>?/gm, '')}</p>`;
+                            sectionHTML += `<p><strong>Your Answer:</strong> ${answerText || 'No answer'}</p>`;
+                            sectionHTML += `<p><strong>Status:</strong> ${answer.correct ? 'Correct ✅' : 'Incorrect ❌'}</p>`;
+                            sectionHTML += `</div>`;
+                        }
+                    });
+                    if(sectionHasContent) contentHTML += sectionHTML;
+                };
+                
+                processActivities(lessonData[day].lesson.filter(a => a.id), "Lesson Activities");
+                Object.values(lessonData[day].practice.levels).forEach(level => processActivities(level.questions, `Practice: ${level.name}`));
+            }
+
+            cloneContainer.innerHTML = contentHTML;
+            document.body.appendChild(cloneContainer);
+
+            const { jsPDF } = window.jspdf;
+            const canvas = await html2canvas(cloneContainer, { scale: 2 });
+            
+            document.body.removeChild(cloneContainer);
+            
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: 'a4' });
+            
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const canvasWidth = canvas.width;
+            const canvasHeight = canvas.height;
+            const ratio = canvasWidth / pdfWidth;
+            const scaledCanvasHeight = canvasHeight / ratio;
+
+            let position = 0;
+            let heightLeft = scaledCanvasHeight;
+
+            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, scaledCanvasHeight);
+            heightLeft -= pdfHeight;
+
+            while (heightLeft > 0) {
+                position -= pdfHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, scaledCanvasHeight);
+                heightLeft -= pdfHeight;
+            }
+
+            pdf.save('detective-report.pdf');
+            loadingOverlay.style.display = 'none';
+        }
+
+        initialize();
+    });
+    </script>
+
+
+</body></html>
