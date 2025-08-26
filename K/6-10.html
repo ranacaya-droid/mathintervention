@@ -1,0 +1,1555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Safari Count: Numbers 6-10</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        /* Custom Styles */
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', sans-serif;
+            background-color: #FDF8E1; /* Sandy Yellow */
+        }
+        .safari-btn {
+            background-color: #D2B48C; /* Tan */
+            border: 4px solid #8B4513; /* Saddle Brown */
+            color: #4B3A26;
+            font-weight: bold;
+            padding: 10px 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px #996515; /* Wooden shadow */
+            transition: all 0.1s ease-in-out;
+            cursor: pointer;
+        }
+        .safari-btn:hover {
+            transform: translateY(2px);
+            box-shadow: 0 3px #996515;
+        }
+        .safari-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px #996515;
+        }
+        .tab-btn {
+            background-color: #A0522D; /* Sienna */
+            color: white;
+            padding: 12px 24px;
+            border-radius: 15px 15px 0 0;
+            font-size: 1.25rem;
+            border: 3px solid #8B4513;
+            border-bottom: none;
+            transition: background-color 0.3s;
+        }
+        .tab-btn.active {
+            background-color: #CD853F; /* Peru */
+        }
+        .slide {
+            background-color: rgba(255, 255, 255, 0.8);
+            border: 5px solid #8B4513;
+            border-radius: 20px;
+            padding: 2rem;
+            min-height: 500px;
+        }
+        .draggable {
+            cursor: grab;
+            user-select: none;
+        }
+        .drop-target {
+            border: 3px dashed #8B4513;
+            min-height: 80px;
+            transition: background-color 0.3s;
+        }
+        .drop-target.over {
+            background-color: #90EE90; /* Light Green */
+        }
+        .feedback {
+            font-size: 1.5rem;
+            font-weight: bold;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-top: 1rem;
+        }
+        .feedback.correct {
+            background-color: #98FB98; /* Pale Green */
+            color: #006400; /* Dark Green */
+        }
+        .feedback.incorrect {
+            background-color: #FFB6C1; /* Light Pink */
+            color: #8B0000; /* Dark Red */
+        }
+        /* Hide scrollbar for clean look */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-[#FDF8E1] text-[#4B3A26] p-4 md:p-8">
+
+    <div id="app" class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row justify-between items-center mb-4">
+            <h1 class="text-4xl md:text-5xl font-bold text-[#8B4513] mb-4 md:mb-0">🦒 Safari Count Adventure 🐘</h1>
+            <div class="flex space-x-2">
+                <button id="download-work-btn" class="safari-btn">Download Work</button>
+                <button id="download-pdf-btn" class="safari-btn">Download PDF</button>
+            </div>
+        </header>
+
+        <!-- Main Navigation Tabs -->
+        <nav id="main-tabs" class="flex justify-center space-x-2 mb-[-3px] z-10 relative">
+            <!-- Tabs will be generated here -->
+        </nav>
+
+        <!-- Content Area -->
+        <main id="content-area" class="bg-[#CD853F] p-4 md:p-6 rounded-2xl rounded-tl-none shadow-lg border-4 border-[#8B4513]">
+            <!-- Day content will be injected here -->
+        </main>
+    </div>
+
+    <!-- Hidden data script for saving progress -->
+    <script id="progress-data" type="application/json"></script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- DATA ---
+        // This holds all lesson plans, questions, and activities.
+        const lessonData = {
+          "day1": {
+            "title": "Safari Six and Soaring Seven",
+            "standard": "K.NR.2.3 - Count objects in a group and represent with a numeral.",
+            "sections": {
+              "hook": [
+                { "id": "d1_hook_1", "type": "content", "prompt": "Welcome, explorers! I saw a group of mischievous monkeys and a flock of colorful parrots. I need your help to count them! How can we make sure we count each one just one time?" }
+              ],
+              "i_do": [
+                { "id": "d1_ido_1", "type": "mc", "prompt": "Count the zebras. Click the correct number.", "visual": "group: {items:[{type:'zebra', count:6}]}", "data": { "options": ["5", "6", "7"] }, "correct": "6" },
+                { "id": "d1_ido_2", "type": "mc", "prompt": "How many dots are in the ten-frame?", "visual": "ten_frame: {dot_count:7, dot_color:'blue'}", "data": { "options": ["7", "8", "6"] }, "correct": "7" },
+                { "id": "d1_ido_3", "type": "true-false", "prompt": "Is this the number 6?", "visual": "number_card: {number:6}", "data": { "options": ["True", "False"] }, "correct": "True" }
+              ],
+              "we_do": [
+                { "id": "d1_wedo_1", "type": "mc", "prompt": "Count the monkeys. How many are there?", "visual": "group: {items:[{type:'monkey', count:7}]}", "data": { "options": ["6", "7", "8"] }, "correct": "7" },
+                { "id": "d1_wedo_2", "type": "drag-drop-match", "prompt": "Drag the number to match the group of parrots.", "visual": "group: {items:[{type:'parrot', count:6}]}", "data": { "draggables": ["6", "7"], "dropTargets": ["Parrot Group"] }, "correct": { "6": "Parrot Group" } },
+                { "id": "d1_wedo_3", "type": "true-false", "prompt": "Does this ten-frame show 6?", "visual": "ten_frame: {dot_count:6, dot_color:'green'}", "data": { "options": ["True", "False"] }, "correct": "True" },
+                { "id": "d1_wedo_4", "type": "mc", "prompt": "Find the group of 7 lions.", "visual": "group: {items:[{type:'lion', count:7}, {type:'zebra', count:5}]}", "data": { "options": ["Lion Group", "Zebra Group"] }, "correct": "Lion Group" },
+                { "id": "d1_wedo_5", "type": "mc", "prompt": "How many zebras are there?", "visual": "group: {items:[{type:'zebra', count:6}]}", "data": { "options": ["6", "5", "7"] }, "correct": "6" },
+                { "id": "d1_wedo_6", "type": "true-false", "prompt": "Is this the number 7?", "visual": "number_card: {number:7}", "data": { "options": ["True", "False"] }, "correct": "True" },
+                { "id": "d1_wedo_7", "type": "drag-drop-match", "prompt": "Match the ten-frame to the correct number.", "visual": "ten_frame: {dot_count:7, dot_color:'red'}", "data": { "draggables": ["6", "7"], "dropTargets": ["Ten-Frame"] }, "correct": { "7": "Ten-Frame" } },
+                { "id": "d1_wedo_8", "type": "mc", "prompt": "Count the parrots. Choose the right number.", "visual": "group: {items:[{type:'parrot', count:7}]}", "data": { "options": ["5", "6", "7"] }, "correct": "7" },
+                { "id": "d1_wedo_9", "type": "true-false", "prompt": "Are there 6 monkeys here?", "visual": "group: {items:[{type:'monkey', count:6}]}", "data": { "options": ["True", "False"] }, "correct": "True" },
+                { "id": "d1_wedo_10", "type": "mc", "prompt": "Which number matches the dots?", "visual": "ten_frame: {dot_count:6, dot_color:'blue'}", "data": { "options": ["6", "7", "5"] }, "correct": "6" }
+              ],
+              "you_do": [
+                { "id": "d1_youdo_1", "type": "mc", "prompt": "Count the lions. How many do you see?", "visual": "group: {items:[{type:'lion', count:7}]}", "data": { "options": ["6", "7", "8"] }, "correct": "7" },
+                { "id": "d1_youdo_2", "type": "true-false", "prompt": "Does this show 6?", "visual": "ten_frame: {dot_count:7, dot_color:'orange'}", "data": { "options": ["True", "False"] }, "correct": "False" },
+                { "id": "d1_youdo_3", "type": "mc", "prompt": "Click the number 6.", "visual": "", "data": { "options": ["5", "6", "7"] }, "correct": "6" },
+                { "id": "d1_youdo_4", "type": "drag-drop-match", "prompt": "Drag the number 7 to the group of 7 zebras.", "visual": "group: {items:[{type:'zebra', count:7}]}", "data": { "draggables": ["6", "7"], "dropTargets": ["Zebra Group"] }, "correct": { "7": "Zebra Group" } },
+                { "id": "d1_youdo_5", "type": "mc", "prompt": "How many dots?", "visual": "ten_frame: {dot_count:6, dot_color:'purple'}", "data": { "options": ["5", "6", "7"] }, "correct": "6" }
+              ]
+            },
+            "practice_center": {
+              "level1": [
+                { "id": "d1_l1_q1", "type": "mc", "prompt": "How many lions?", "visual": "group: {items:[{type:'lion', count:6}]}", "data": { "options": ["5", "6", "7"] }, "correct": "6" },
+                { "id": "d1_l1_q2", "type": "mc", "prompt": "How many monkeys?", "visual": "group: {items:[{type:'monkey', count:7}]}", "data": { "options": ["6", "7", "8"] }, "correct": "7" },
+                { "id": "d1_l1_q3", "type": "mc", "prompt": "How many dots?", "visual": "ten_frame: {dot_count:6, dot_color:'blue'}", "data": { "options": ["6", "5", "7"] }, "correct": "6" },
+                { "id": "d1_l1_q4", "type": "mc", "prompt": "How many dots?", "visual": "ten_frame: {dot_count:7, dot_color:'red'}", "data": { "options": ["8", "6", "7"] }, "correct": "7" },
+                { "id": "d1_l1_q5", "type": "mc", "prompt": "Which number is this?", "visual": "number_card: {number:7}", "data": { "options": ["6", "7", "5"] }, "correct": "7" },
+                { "id": "d1_l1_q6", "type": "mc", "prompt": "Which number is this?", "visual": "number_card: {number:6}", "data": { "options": ["6", "7", "8"] }, "correct": "6" },
+                { "id": "d1_l1_q7", "type": "mc", "prompt": "Count the parrots.", "visual": "group: {items:[{type:'parrot', count:6}]}", "data": { "options": ["6", "7", "5"] }, "correct": "6" },
+                { "id": "d1_l1_q8", "type": "mc", "prompt": "Count the zebras.", "visual": "group: {items:[{type:'zebra', count:7}]}", "data": { "options": ["5", "7", "6"] }, "correct": "7" },
+                { "id": "d1_l1_q9", "type": "mc", "prompt": "Find the number 6.", "visual": "", "data": { "options": ["7", "6", "8"] }, "correct": "6" },
+                { "id": "d1_l1_q10", "type": "mc", "prompt": "Find the number 7.", "visual": "", "data": { "options": ["7", "5", "6"] }, "correct": "7" },
+                { "id": "d1_l1_q11", "type": "true-false", "prompt": "Are there 7 lions?", "visual": "group: {items:[{type:'lion', count:7}]}", "data": { "options": ["True", "False"] }, "correct": "True" },
+                { "id": "d1_l1_q12", "type": "true-false", "prompt": "Are there 6 monkeys?", "visual": "group: {items:[{type:'monkey', count:7}]}", "data": { "options": ["True", "False"] }, "correct": "False" },
+                { "id": "d1_l1_q13", "type": "true-false", "prompt": "Does the ten-frame show 6?", "visual": "ten_frame: {dot_count:6, dot_color:'green'}", "data": { "options": ["True", "False"] }, "correct": "True" },
+                { "id": "d1_l1_q14", "type": "true-false", "prompt": "Is this the number 7?", "visual": "number_card: {number:6}", "data": { "options": ["True", "False"] }, "correct": "False" },
+                { "id": "d1_l1_q15", "type": "true-false", "prompt": "Are there 7 dots?", "visual": "ten_frame: {dot_count:7, dot_color:'yellow'}", "data": { "options": ["True", "False"] }, "correct": "True" },
+                { "id": "d1_l1_q16", "type": "drag-drop-match", "prompt": "Match the number to the group.", "visual": "group: {items:[{type:'zebra', count:6}]}", "data": { "draggables": ["6", "7"], "dropTargets": ["Group"] }, "correct": { "6": "Group" } },
+                { "id": "d1_l1_q17", "type": "drag-drop-match", "prompt": "Match the number to the group.", "visual": "group: {items:[{type:'parrot', count:7}]}", "data": { "draggables": ["6", "7"], "dropTargets": ["Group"] }, "correct": { "7": "Group" } },
+                { "id": "d1_l1_q18", "type": "drag-drop-match", "prompt": "Match the ten-frame to the number.", "visual": "number_card: {number:7}", "data": { "draggables": ["ten_frame with 6 dots", "ten_frame with 7 dots"], "dropTargets": ["Number"] }, "correct": { "ten_frame with 7 dots": "Number" } },
+                { "id": "d1_l1_q19", "type": "drag-drop-match", "prompt": "Match the number to the ten-frame.", "visual": "ten_frame: {dot_count:6, dot_color:'orange'}", "data": { "draggables": ["6", "7"], "dropTargets": ["Ten-Frame"] }, "correct": { "6": "Ten-Frame" } },
+                { "id": "d1_l1_q20", "type": "drag-drop-match", "prompt": "Match the animal group to the number.", "visual": "number_card: {number:6}", "data": { "draggables": ["group of 6 lions", "group of 7 lions"], "dropTargets": ["Number"] }, "correct": { "group of 6 lions": "Number" } }
+              ],
+              "level2": [
+                { "id": "d1_l2_q1", "type": "mc", "prompt": "Which group shows 6?", "visual": "group: {items:[{type:'monkey', count:7}, {type:'zebra', count:6}]}", "data": { "options": ["Monkeys", "Zebras", "Neither"] }, "correct": "Zebras" },
+                { "id": "d1_l2_q2", "type": "mc", "prompt": "I have 5 dots and add 2 more. How many dots do I have?", "visual": "ten_frame: {dot_count:7, dot_color:'blue'}", "data": { "options": ["6", "7", "8"] }, "correct": "7" },
+                { "id": "d1_l2_q3", "type": "mc", "prompt": "Which ten-frame shows 7?", "visual": "ten_frame: {dot_count:6, dot_color:'green'} and ten_frame: {dot_count:7, dot_color:'red'}", "data": { "options": ["The green one", "The red one", "Both"] }, "correct": "The red one" },
+                { "id": "d1_l2_q4", "type": "mc", "prompt": "Count the animals. Which number is NOT shown?", "visual": "group: {items:[{type:'lion', count:6}, {type:'parrot', count:7}]}", "data": { "options": ["5", "6", "7"] }, "correct": "5" },
+                { "id": "d1_l2_q5", "type": "mc", "prompt": "A safari truck has 6 wheels. Which number is 6?", "visual": "", "data": { "options": ["6", "7", "six"] }, "correct": "6" },
+                { "id": "d1_l2_q6", "type": "multi-select", "prompt": "Select all the ways to show 7.", "visual": "", "data": { "options": ["group of 7 monkeys", "number_card with 7", "ten_frame with 6 dots", "group of 6 lions"] }, "correct": ["group of 7 monkeys", "number_card with 7"] },
+                { "id": "d1_l2_q7", "type": "multi-select", "prompt": "Which groups have 6 animals?", "visual": "group: {items:[{type:'zebra', count:6}, {type:'parrot', count:6}, {type:'monkey', count:7}]}", "data": { "options": ["Zebras", "Parrots", "Monkeys"] }, "correct": ["Zebras", "Parrots"] },
+                { "id": "d1_l2_q8", "type": "multi-select", "prompt": "Find all the number 6s.", "visual": "number_card: {number:6}, number_card: {number:7}, number_card: {number:6}", "data": { "options": ["First card", "Second card", "Third card"] }, "correct": ["First card", "Third card"] },
+                { "id": "d1_l2_q9", "type": "multi-select", "prompt": "Select the pictures that show more than 5.", "visual": "ten_frame: {dot_count:7, dot_color:'purple'}, group: {items:[{type:'lion', count:5}]}, ten_frame: {dot_count:6, dot_color:'yellow'}", "data": { "options": ["Purple ten-frame", "Lions", "Yellow ten-frame"] }, "correct": ["Purple ten-frame", "Yellow ten-frame"] },
+                { "id": "d1_l2_q10", "type": "multi-select", "prompt": "Which of these are the number 7?", "visual": "", "data": { "options": ["7", "seven", "6", "sevin"] }, "correct": ["7", "seven"] },
+                { "id": "d1_l2_q11", "type": "text-box", "prompt": "Count the zebras and type the number.", "visual": "group: {items:[{type:'zebra', count:7}]}", "data": { "size": 2 }, "correct": "7" },
+                { "id": "d1_l2_q12", "type": "text-box", "prompt": "How many dots are in the ten-frame? Type the number.", "visual": "ten_frame: {dot_count:6, dot_color:'orange'}", "data": { "size": 2 }, "correct": "6" },
+                { "id": "d1_l2_q13", "type": "text-box", "prompt": "There are 6 monkeys. One more joins them. How many monkeys now?", "visual": "group: {items:[{type:'monkey', count:7}]}", "data": { "size": 2 }, "correct": "7" },
+                { "id": "d1_l2_q14", "type": "text-box", "prompt": "What number comes after 5?", "visual": "", "data": { "size": 2 }, "correct": "6" },
+                { "id": "d1_l2_q15", "type": "text-box", "prompt": "Write the number that the ten-frame shows.", "visual": "ten_frame: {dot_count:7, dot_color:'green'}", "data": { "size": 2 }, "correct": "7" },
+                { "id": "d1_l2_q16", "type": "drag-drop-sort", "prompt": "Sort the pictures into groups of 6 and 7.", "visual": "", "data": { "items": ["group of 6 lions", "group of 7 zebras", "ten_frame with 6 dots", "number_card with 7"], "categories": ["Group of 6", "Group of 7"] }, "correct": { "Group of 6": ["group of 6 lions", "ten_frame with 6 dots"], "Group of 7": ["group of 7 zebras", "number_card with 7"] } },
+                { "id": "d1_l2_q17", "type": "drag-drop-sort", "prompt": "Put the numbers in the correct boxes.", "visual": "", "data": { "items": ["number_card with 6", "number_card with 7", "number_card with 5", "number_card with 6"], "categories": ["Number 6", "Not Number 6"] }, "correct": { "Number 6": ["number_card with 6", "number_card with 6"], "Not Number 6": ["number_card with 7", "number_card with 5"] } },
+                { "id": "d1_l2_q18", "type": "drag-drop-sort", "prompt": "Sort the ten-frames.", "visual": "", "data": { "items": ["ten_frame with 7 dots", "ten_frame with 6 dots", "ten_frame with 5 dots", "ten_frame with 7 dots"], "categories": ["Shows 7", "Shows Less Than 7"] }, "correct": { "Shows 7": ["ten_frame with 7 dots", "ten_frame with 7 dots"], "Shows Less Than 7": ["ten_frame with 6 dots", "ten_frame with 5 dots"] } },
+                { "id": "d1_l2_q19", "type": "drag-drop-sort", "prompt": "Group the animals by number.", "visual": "", "data": { "items": ["group of 7 parrots", "group of 6 monkeys", "group of 7 lions", "group of 6 zebras"], "categories": ["6 Animals", "7 Animals"] }, "correct": { "6 Animals": ["group of 6 monkeys", "group of 6 zebras"], "7 Animals": ["group of 7 parrots", "group of 7 lions"] } },
+                { "id": "d1_l2_q20", "type": "drag-drop-sort", "prompt": "Sort the items into 'Six' and 'Seven' buckets.", "visual": "", "data": { "items": ["number_card with 6", "ten_frame with 7 dots", "group of 6 parrots", "7"], "categories": ["Six", "Seven"] }, "correct": { "Six": ["number_card with 6", "group of 6 parrots"], "Seven": ["ten_frame with 7 dots", "7"] } }
+              ],
+              "level3": [
+                { "id": "d1_l3_q1", "type": "mc", "prompt": "There are 2 lions, 4 zebras, and 1 monkey. How many animals are there in total?", "visual": "group: {items:[{type:'lion', count:2}, {type:'zebra', count:4}, {type:'monkey', count:1}]}", "data": { "options": ["6", "7", "8"] }, "correct": "7" },
+                { "id": "d1_l3_q2", "type": "mc", "prompt": "A ten-frame has 10 spots. If 3 spots are empty, how many dots are there?", "visual": "ten_frame: {dot_count:7, dot_color:'red'}", "data": { "options": ["6", "7", "10"] }, "correct": "7" },
+                { "id": "d1_l3_q3", "type": "mc", "prompt": "Which statement is true?", "visual": "group: {items:[{type:'parrot', count:6}]} and group: {items:[{type:'monkey', count:7}]}", "data": { "options": ["There are more parrots than monkeys.", "There are fewer parrots than monkeys.", "There are 6 monkeys."] }, "correct": "There are fewer parrots than monkeys." },
+                { "id": "d1_l3_q4", "type": "mc", "prompt": "I am a number between 5 and 7. What number am I?", "visual": "", "data": { "options": ["5", "6", "7"] }, "correct": "6" },
+                { "id": "d1_l3_q5", "type": "mc", "prompt": "If you have 7 bananas and eat one, how many are left?", "visual": "group: {items:[{type:'banana', count:6}]}", "data": { "options": ["5", "6", "7"] }, "correct": "6" },
+                { "id": "d1_l3_q6", "type": "text-box", "prompt": "Draw a group of 6 stars. Then, type the number 6.", "visual": "drawing_canvas", "data": { "size": 2 }, "correct": "6" },
+                { "id": "d1_l3_q7", "type": "text-box", "prompt": "Show 7 on the ten-frame using two different colors. How many of your first color did you use?", "visual": "ten_frame: {dot_count:7, dot_color:'bicolor'}", "data": { "size": 2 }, "correct": "Answers will vary" },
+                { "id": "d1_l3_q8", "type": "text-box", "prompt": "There are 7 days in a week. If today is Monday, what day will it be in 5 days? First, count 5 days forward. Then, type the number 6 for Saturday.", "visual": "", "data": { "size": 10 }, "correct": "6" },
+                { "id": "d1_l3_q9", "type": "text-box", "prompt": "Find something in the room that you can make a group of 6 with. What is it? Then type '6'.", "visual": "", "data": { "size": 20 }, "correct": "6" },
+                { "id": "d1_l3_q10", "type": "text-box", "prompt": "Start at 7 and count backwards 1. What number are you on?", "visual": "number_line: {start:0, end:10, highlight:7}", "data": { "size": 2 }, "correct": "6" },
+                { "id": "d1_l3_q11", "type": "drag-drop-match", "prompt": "Match the problem to the answer.", "visual": "", "data": { "draggables": ["5 and 1 more", "5 and 2 more"], "dropTargets": ["6", "7"] }, "correct": { "5 and 1 more": "6", "5 and 2 more": "7" } },
+                { "id": "d1_l3_q12", "type": "drag-drop-sort", "prompt": "Create a pattern. Drag one animal to the box to continue the pattern: Lion, Zebra, Lion, Zebra...", "visual": "group: {items:[{type:'lion'}, {type:'zebra'}, {type:'lion'}, {type:'zebra'}]}", "data": { "items": ["lion", "zebra"], "categories": ["Next in Pattern"] }, "correct": { "Next in Pattern": ["lion"] } },
+                { "id": "d1_l3_q13", "type": "drag-drop-match", "prompt": "Match the number word to the numeral.", "visual": "", "data": { "draggables": ["six", "seven"], "dropTargets": ["6", "7"] }, "correct": { "six": "6", "seven": "7" } },
+                { "id": "d1_l3_q14", "type": "drag-drop-sort", "prompt": "Put the numbers in order from smallest to largest.", "visual": "", "data": { "items": ["7", "5", "6"], "categories": ["1st", "2nd", "3rd"] }, "correct": { "1st": ["5"], "2nd": ["6"], "3rd": ["7"] } },
+                { "id": "d1_l3_q15", "type": "drag-drop-match", "prompt": "An insect has 6 legs. A spider has 8 legs. Drag the correct number of legs to the insect.", "visual": "group: {items:[{type:'insect'}]}", "data": { "draggables": ["6 legs", "8 legs"], "dropTargets": ["Insect"] }, "correct": { "6 legs": "Insect" } },
+                { "id": "d1_l3_q16", "type": "mc", "prompt": "Part A: How many dots are in the ten-frame? Part B: Is this number closer to 5 or 10?", "visual": "ten_frame: {dot_count:7, dot_color:'purple'}", "data": { "options": ["7, Closer to 5", "7, Closer to 10", "6, Closer to 5"] }, "correct": "7, Closer to 10" },
+                { "id": "d1_l3_q17", "type": "mc", "prompt": "Part A: Count the animals. Part B: If two animals hide, how many are left?", "visual": "group: {items:[{type:'monkey', count:6}]}", "data": { "options": ["6, 4 are left", "6, 5 are left", "7, 5 are left"] }, "correct": "6, 4 are left" },
+                { "id": "d1_l3_q18", "type": "mc", "prompt": "Part A: Which number is shown? Part B: Which number is one less?", "visual": "number_card: {number:7}", "data": { "options": ["7, one less is 6", "7, one less is 8", "6, one less is 5"] }, "correct": "7, one less is 6" },
+                { "id": "d1_l3_q19", "type": "mc", "prompt": "Part A: How many empty spaces are in the ten-frame? Part B: How many dots are there?", "visual": "ten_frame: {dot_count:6, dot_color:'black'}", "data": { "options": ["4 empty, 6 dots", "6 empty, 4 dots", "5 empty, 5 dots"] }, "correct": "4 empty, 6 dots" },
+                { "id": "d1_l3_q20", "type": "mc", "prompt": "Part A: Count the zebras. Part B: If you add one more zebra, how many will there be?", "visual": "group: {items:[{type:'zebra', count:6}]}", "data": { "options": ["6, there will be 7", "7, there will be 8", "6, there will be 5"] }, "correct": "6, there will be 7" }
+              ]
+            }
+          },
+          "day2": {
+            "title": "Eight Awesome Elephants and Nine Noble Wildebeest",
+            "standard": "K.NR.2.3 - Count objects in a group and represent with a numeral.",
+            "sections": {
+              "hook": [
+                { "id": "d2_hook_1", "type": "content", "prompt": "Let's play a quick game! I'll flash a ten-frame. Tell me how many dots you see. Ready?" }
+              ],
+              "i_do": [
+                { "id": "d2_ido_1", "type": "mc", "prompt": "Count the elephants. Click the correct number.", "visual": "group: {items:[{type:'elephant', count:8}]}", "data": { "options": ["7", "8", "9"] }, "correct": "8" },
+                { "id": "d2_ido_2", "type": "mc", "prompt": "How many dots are in the ten-frame?", "visual": "ten_frame: {dot_count:9, dot_color:'green'}", "data": { "options": ["8", "9", "10"] }, "correct": "9" },
+                { "id": "d2_ido_3", "type": "true-false", "prompt": "Is this the number 8?", "visual": "number_card: {number:8}", "data": { "options": ["True", "False"] }, "correct": "True" }
+              ],
+              "we_do": [
+                { "id": "d2_wedo_1", "type": "mc", "prompt": "Count the hippos. How many are there?", "visual": "group: {items:[{type:'hippo', count:9}]}", "data": { "options": ["8", "9", "10"] }, "correct": "9" },
+                { "id": "d2_wedo_2", "type": "drag-drop-match", "prompt": "Drag the number to match the group of rhinos.", "visual": "group: {items:[{type:'rhino', count:8}]}", "data": { "draggables": ["8", "9"], "dropTargets": ["Rhino Group"] }, "correct": { "8": "Rhino Group" } },
+                { "id": "d2_wedo_3", "type": "true-false", "prompt": "Does this ten-frame show 9?", "visual": "ten_frame: {dot_count:9, dot_color:'blue'}", "data": { "options": ["True", "False"] }, "correct": "True" },
+                { "id": "d2_wedo_4", "type": "mc", "prompt": "Find the group of 8 wildebeest.", "visual": "group: {items:[{type:'wildebeest', count:8}, {type:'elephant', count:9}]}", "data": { "options": ["Wildebeest Group", "Elephant Group"] }, "correct": "Wildebeest Group" },
+                { "id": "d2_wedo_5", "type": "mc", "prompt": "How many elephants are there?", "visual": "group: {items:[{type:'elephant', count:9}]}", "data": { "options": ["9", "8", "7"] }, "correct": "9" },
+                { "id": "d2_wedo_6", "type": "true-false", "prompt": "Is this the number 9?", "visual": "number_card: {number:9}", "data": { "options": ["True", "False"] }, "correct": "True" },
+                { "id": "d2_wedo_7", "type": "drag-drop-match", "prompt": "Match the ten-frame to the correct number.", "visual": "ten_frame: {dot_count:8, dot_color:'yellow'}", "data": { "draggables": ["8", "9"], "dropTargets": ["Ten-Frame"] }, "correct": { "8": "Ten-Frame" } },
+                { "id": "d2_wedo_8", "type": "mc", "prompt": "Count the rhinos. Choose the right number.", "visual": "group: {items:[{type:'rhino', count:9}]}", "data": { "options": ["7", "8", "9"] }, "correct": "9" },
+                { "id": "d2_wedo_9", "type": "true-false", "prompt": "Are there 8 hippos here?", "visual": "group: {items:[{type:'hippo', count:8}]}", "data": { "options": ["True", "False"] }, "correct": "True" },
+                { "id": "d2_wedo_10", "type": "mc", "prompt": "Which number matches the dots?", "visual": "ten_frame: {dot_count:9, dot_color:'purple'}", "data": { "options": ["9", "8", "10"] }, "correct": "9" }
+              ],
+              "you_do": [
+                { "id": "d2_youdo_1", "type": "mc", "prompt": "Count the wildebeest. How many do you see?", "visual": "group: {items:[{type:'wildebeest', count:9}]}", "data": { "options": ["8", "9", "10"] }, "correct": "9" },
+                { "id": "d2_youdo_2", "type": "true-false", "prompt": "Does this show 8?", "visual": "ten_frame: {dot_count:9, dot_color:'orange'}", "data": { "options": ["True", "False"] }, "correct": "False" },
+                { "id": "d2_youdo_3", "type": "mc", "prompt": "Click the number 8.", "visual": "", "data": { "options": ["9", "8", "7"] }, "correct": "8" },
+                { "id": "d2_youdo_4", "type": "drag-drop-match", "prompt": "Drag the number 9 to the group of 9 elephants.", "visual": "group: {items:[{type:'elephant', count:9}]}", "data": { "draggables": ["8", "9"], "dropTargets": ["Elephant Group"] }, "correct": { "9": "Elephant Group" } },
+                { "id": "d2_youdo_5", "type": "mc", "prompt": "How many dots?", "visual": "ten_frame: {dot_count:8, dot_color:'pink'}", "data": { "options": ["8", "9", "7"] }, "correct": "8" }
+              ]
+            },
+            "practice_center": {
+              "level1": [
+                { "id": "d2_l1_q1", "type": "mc", "prompt": "How many elephants?", "visual": "group: {items:[{type:'elephant', count:8}]}", "data": { "options": ["7", "8", "9"] }, "correct": "8" },
+                { "id": "d2_l1_q2", "type": "mc", "prompt": "How many hippos?", "visual": "group: {items:[{type:'hippo', count:9}]}", "data": { "options": ["8", "9", "10"] }, "correct": "9" },
+                { "id": "d2_l1_q3", "type": "mc", "prompt": "How many dots?", "visual": "ten_frame: {dot_count:8, dot_color:'blue'}", "data": { "options": ["8", "7", "9"] }, "correct": "8" },
+                { "id": "d2_l1_q4", "type": "mc", "prompt": "How many dots?", "visual": "ten_frame: {dot_count:9, dot_color:'red'}", "data": { "options": ["10", "8", "9"] }, "correct": "9" },
+                { "id": "d2_l1_q5", "type": "mc", "prompt": "Which number is this?", "visual": "number_card: {number:9}", "data": { "options": ["8", "9", "7"] }, "correct": "9" },
+                { "id": "d2_l1_q6", "type": "mc", "prompt": "Which number is this?", "visual": "number_card: {number:8}", "data": { "options": ["8", "9", "10"] }, "correct": "8" },
+                { "id": "d2_l1_q7", "type": "mc", "prompt": "Count the rhinos.", "visual": "group: {items:[{type:'rhino', count:8}]}", "data": { "options": ["8", "9", "7"] }, "correct": "8" },
+                { "id": "d2_l1_q8", "type": "mc", "prompt": "Count the wildebeest.", "visual": "group: {items:[{type:'wildebeest', count:9}]}", "data": { "options": ["7", "9", "8"] }, "correct": "9" },
+                { "id": "d2_l1_q9", "type": "mc", "prompt": "Find the number 8.", "visual": "", "data": { "options": ["9", "8", "10"] }, "correct": "8" },
+                { "id": "d2_l1_q10", "type": "mc", "prompt": "Find the number 9.", "visual": "", "data": { "options": ["9", "7", "8"] }, "correct": "9" },
+                { "id": "d2_l1_q11", "type": "true-false", "prompt": "Are there 9 elephants?", "visual": "group: {items:[{type:'elephant', count:9}]}", "data": { "options": ["True", "False"] }, "correct": "True" },
+                { "id": "d2_l1_q12", "type": "true-false", "prompt": "Are there 8 hippos?", "visual": "group: {items:[{type:'hippo', count:9}]}", "data": { "options": ["True", "False"] }, "correct": "False" },
+                { "id": "d2_l1_q13", "type": "true-false", "prompt": "Does the ten-frame show 8?", "visual": "ten_frame: {dot_count:8, dot_color:'green'}", "data": { "options": ["True", "False"] }, "correct": "True" },
+                { "id": "d2_l1_q14", "type": "true-false", "prompt": "Is this the number 9?", "visual": "number_card: {number:8}", "data": { "options": ["True", "False"] }, "correct": "False" },
+                { "id": "d2_l1_q15", "type": "true-false", "prompt": "Are there 9 dots?", "visual": "ten_frame: {dot_count:9, dot_color:'yellow'}", "data": { "options": ["True", "False"] }, "correct": "True" },
+                { "id": "d2_l1_q16", "type": "drag-drop-match", "prompt": "Match the number to the group.", "visual": "group: {items:[{type:'wildebeest', count:8}]}", "data": { "draggables": ["8", "9"], "dropTargets": ["Group"] }, "correct": { "8": "Group" } },
+                { "id": "d2_l1_q17", "type": "drag-drop-match", "prompt": "Match the number to the group.", "visual": "group: {items:[{type:'rhino', count:9}]}", "data": { "draggables": ["8", "9"], "dropTargets": ["Group"] }, "correct": { "9": "Group" } },
+                { "id": "d2_l1_q18", "type": "drag-drop-match", "prompt": "Match the ten-frame to the number.", "visual": "number_card: {number:9}", "data": { "draggables": ["ten_frame with 8 dots", "ten_frame with 9 dots"], "dropTargets": ["Number"] }, "correct": { "ten_frame with 9 dots": "Number" } },
+                { "id": "d2_l1_q19", "type": "drag-drop-match", "prompt": "Match the number to the ten-frame.", "visual": "ten_frame: {dot_count:8, dot_color:'orange'}", "data": { "draggables": ["8", "9"], "dropTargets": ["Ten-Frame"] }, "correct": { "8": "Ten-Frame" } },
+                { "id": "d2_l1_q20", "type": "drag-drop-match", "prompt": "Match the animal group to the number.", "visual": "number_card: {number:8}", "data": { "draggables": ["group of 8 elephants", "group of 9 elephants"], "dropTargets": ["Number"] }, "correct": { "group of 8 elephants": "Number" } }
+              ],
+              "level2": [
+                { "id": "d2_l2_q1", "type": "mc", "prompt": "Which group shows 9?", "visual": "group: {items:[{type:'hippo', count:9}, {type:'rhino', count:8}]}", "data": { "options": ["Hippos", "Rhinos", "Neither"] }, "correct": "Hippos" },
+                { "id": "d2_l2_q2", "type": "mc", "prompt": "I have 5 dots on top and 3 on the bottom. How many dots do I have?", "visual": "ten_frame: {dot_count:8, dot_color:'blue'}", "data": { "options": ["7", "8", "9"] }, "correct": "8" },
+                { "id": "d2_l2_q3", "type": "mc", "prompt": "Which ten-frame shows 8?", "visual": "ten_frame: {dot_count:8, dot_color:'green'} and ten_frame: {dot_count:9, dot_color:'red'}", "data": { "options": ["The green one", "The red one", "Both"] }, "correct": "The green one" },
+                { "id": "d2_l2_q4", "type": "mc", "prompt": "Count the animals. Which number is NOT shown?", "visual": "group: {items:[{type:'elephant', count:8}, {type:'wildebeest', count:9}]}", "data": { "options": ["10", "8", "9"] }, "correct": "10" },
+                { "id": "d2_l2_q5", "type": "mc", "prompt": "A spider has 8 legs. Which number is 8?", "visual": "", "data": { "options": ["8", "9", "eight"] }, "correct": "8" },
+                { "id": "d2_l2_q6", "type": "multi-select", "prompt": "Select all the ways to show 9.", "visual": "", "data": { "options": ["group of 9 hippos", "number_card with 9", "ten_frame with 8 dots", "group of 8 rhinos"] }, "correct": ["group of 9 hippos", "number_card with 9"] },
+                { "id": "d2_l2_q7", "type": "multi-select", "prompt": "Which groups have 8 animals?", "visual": "group: {items:[{type:'elephant', count:8}, {type:'rhino', count:8}, {type:'hippo', count:9}]}", "data": { "options": ["Elephants", "Rhinos", "Hippos"] }, "correct": ["Elephants", "Rhinos"] },
+                { "id": "d2_l2_q8", "type": "multi-select", "prompt": "Find all the number 9s.", "visual": "number_card: {number:9}, number_card: {number:8}, number_card: {number:9}", "data": { "options": ["First card", "Second card", "Third card"] }, "correct": ["First card", "Third card"] },
+                { "id": "d2_l2_q9", "type": "multi-select", "prompt": "Select the pictures that show more than 7.", "visual": "ten_frame: {dot_count:9, dot_color:'purple'}, group: {items:[{type:'wildebeest', count:7}]}, ten_frame: {dot_count:8, dot_color:'yellow'}", "data": { "options": ["Purple ten-frame", "Wildebeest", "Yellow ten-frame"] }, "correct": ["Purple ten-frame", "Yellow ten-frame"] },
+                { "id": "d2_l2_q10", "type": "multi-select", "prompt": "Which of these are the number 8?", "visual": "", "data": { "options": ["8", "nine", "eight", "9"] }, "correct": ["8", "eight"] },
+                { "id": "d2_l2_q11", "type": "text-box", "prompt": "Count the elephants and type the number.", "visual": "group: {items:[{type:'elephant', count:9}]}", "data": { "size": 2 }, "correct": "9" },
+                { "id": "d2_l2_q12", "type": "text-box", "prompt": "How many dots are in the ten-frame? Type the number.", "visual": "ten_frame: {dot_count:8, dot_color:'orange'}", "data": { "size": 2 }, "correct": "8" },
+                { "id": "d2_l2_q13", "type": "text-box", "prompt": "There are 8 rhinos. One more joins them. How many rhinos now?", "visual": "group: {items:[{type:'rhino', count:9}]}", "data": { "size": 2 }, "correct": "9" },
+                { "id": "d2_l2_q14", "type": "text-box", "prompt": "What number comes before 10?", "visual": "", "data": { "size": 2 }, "correct": "9" },
+                { "id": "d2_l2_q15", "type": "text-box", "prompt": "Write the number that the ten-frame shows.", "visual": "ten_frame: {dot_count:9, dot_color:'green'}", "data": { "size": 2 }, "correct": "9" },
+                { "id": "d2_l2_q16", "type": "drag-drop-sort", "prompt": "Sort the pictures into groups of 8 and 9.", "visual": "", "data": { "items": ["group of 8 elephants", "group of 9 hippos", "ten_frame with 8 dots", "number_card with 9"], "categories": ["Group of 8", "Group of 9"] }, "correct": { "Group of 8": ["group of 8 elephants", "ten_frame with 8 dots"], "Group of 9": ["group of 9 hippos", "number_card with 9"] } },
+                { "id": "d2_l2_q17", "type": "drag-drop-sort", "prompt": "Put the numbers in the correct boxes.", "visual": "", "data": { "items": ["number_card with 8", "number_card with 9", "number_card with 7", "number_card with 8"], "categories": ["Number 8", "Not Number 8"] }, "correct": { "Number 8": ["number_card with 8", "number_card with 8"], "Not Number 8": ["number_card with 9", "number_card with 7"] } },
+                { "id": "d2_l2_q18", "type": "drag-drop-sort", "prompt": "Sort the ten-frames.", "visual": "", "data": { "items": ["ten_frame with 9 dots", "ten_frame with 8 dots", "ten_frame with 10 dots", "ten_frame with 9 dots"], "categories": ["Shows 9", "Shows a Different Number"] }, "correct": { "Shows 9": ["ten_frame with 9 dots", "ten_frame with 9 dots"], "Shows a Different Number": ["ten_frame with 8 dots", "ten_frame with 10 dots"] } },
+                { "id": "d2_l2_q19", "type": "drag-drop-sort", "prompt": "Group the animals by number.", "visual": "", "data": { "items": ["group of 9 rhinos", "group of 8 hippos", "group of 9 elephants", "group of 8 wildebeest"], "categories": ["8 Animals", "9 Animals"] }, "correct": { "8 Animals": ["group of 8 hippos", "group of 8 wildebeest"], "9 Animals": ["group of 9 rhinos", "group of 9 elephants"] } },
+                { "id": "d2_l2_q20", "type": "drag-drop-sort", "prompt": "Sort the items into 'Eight' and 'Nine' buckets.", "visual": "", "data": { "items": ["number_card with 8", "ten_frame with 9 dots", "group of 8 rhinos", "9"], "categories": ["Eight", "Nine"] }, "correct": { "Eight": ["number_card with 8", "group of 8 rhinos"], "Nine": ["ten_frame with 9 dots", "9"] } }
+              ],
+              "level3": [
+                { "id": "d2_l3_q1", "type": "mc", "prompt": "There are 5 elephants and 4 hippos. How many animals are there in total?", "visual": "group: {items:[{type:'elephant', count:5}, {type:'hippo', count:4}]}", "data": { "options": ["8", "9", "10"] }, "correct": "9" },
+                { "id": "d2_l3_q2", "type": "mc", "prompt": "A ten-frame has 10 spots. If 1 spot is empty, how many dots are there?", "visual": "ten_frame: {dot_count:9, dot_color:'red'}", "data": { "options": ["8", "9", "10"] }, "correct": "9" },
+                { "id": "d2_l3_q3", "type": "mc", "prompt": "Which statement is true?", "visual": "group: {items:[{type:'rhino', count:8}]} and group: {items:[{type:'wildebeest', count:9}]}", "data": { "options": ["There are more rhinos than wildebeest.", "There are fewer rhinos than wildebeest.", "There are 9 rhinos."] }, "correct": "There are fewer rhinos than wildebeest." },
+                { "id": "d2_l3_q4", "type": "mc", "prompt": "I am a number one less than 10. What number am I?", "visual": "", "data": { "options": ["8", "9", "10"] }, "correct": "9" },
+                { "id": "d2_l3_q5", "type": "mc", "prompt": "If you have 8 cookies and your friend gives you one more, how many do you have?", "visual": "group: {items:[{type:'cookie', count:9}]}", "data": { "options": ["7", "8", "9"] }, "correct": "9" },
+                { "id": "d2_l3_q6", "type": "text-box", "prompt": "Draw a group of 9 triangles. Then, type the number 9.", "visual": "drawing_canvas", "data": { "size": 2 }, "correct": "9" },
+                { "id": "d2_l3_q7", "type": "text-box", "prompt": "Show 8 on the ten-frame. How many empty spaces are there?", "visual": "ten_frame: {dot_count:8, dot_color:'blue'}", "data": { "size": 2 }, "correct": "2" },
+                { "id": "d2_l3_q8", "type": "text-box", "prompt": "An octopus has 8 arms. A cat has 4 legs. How many more arms than legs? Type the number.", "visual": "", "data": { "size": 2 }, "correct": "4" },
+                { "id": "d2_l3_q9", "type": "text-box", "prompt": "Find two groups of things that add up to 9. What are they? Then type '9'.", "visual": "", "data": { "size": 20 }, "correct": "9" },
+                { "id": "d2_l3_q10", "type": "text-box", "prompt": "Start at 5 and count up 3. What number are you on?", "visual": "number_line: {start:0, end:10, highlight:5}", "data": { "size": 2 }, "correct": "8" },
+                { "id": "d2_l3_q11", "type": "drag-drop-match", "prompt": "Match the problem to the answer.", "visual": "", "data": { "draggables": ["10 take away 1", "10 take away 2"], "dropTargets": ["8", "9"] }, "correct": { "10 take away 1": "9", "10 take away 2": "8" } },
+                { "id": "d2_l3_q12", "type": "drag-drop-sort", "prompt": "Create a pattern. Drag one number to continue the pattern: 9, 8, 7, 9, 8, 7...", "visual": "group: {items:[{type:'number', value:9}, {type:'number', value:8}, {type:'number', value:7}]}", "data": { "items": ["9", "8", "7"], "categories": ["Next in Pattern"] }, "correct": { "Next in Pattern": ["9"] } },
+                { "id": "d2_l3_q13", "type": "drag-drop-match", "prompt": "Match the number word to the numeral.", "visual": "", "data": { "draggables": ["eight", "nine"], "dropTargets": ["8", "9"] }, "correct": { "eight": "8", "nine": "9" } },
+                { "id": "d2_l3_q14", "type": "drag-drop-sort", "prompt": "Put the numbers in order from largest to smallest.", "visual": "", "data": { "items": ["8", "10", "9"], "categories": ["1st", "2nd", "3rd"] }, "correct": { "1st": ["10"], "2nd": ["9"], "3rd": ["8"] } },
+                { "id": "d2_l3_q15", "type": "drag-drop-match", "prompt": "A stop sign has 8 sides. A triangle has 3 sides. Drag the correct shape to the number 8.", "visual": "number_card: {number:8}", "data": { "draggables": ["octagon", "triangle"], "dropTargets": ["Number 8"] }, "correct": { "octagon": "Number 8" } },
+                { "id": "d2_l3_q16", "type": "mc", "prompt": "Part A: How many dots are in the ten-frame? Part B: Is this number closer to 5 or 10?", "visual": "ten_frame: {dot_count:8, dot_color:'purple'}", "data": { "options": ["8, Closer to 5", "8, Closer to 10", "9, Closer to 10"] }, "correct": "8, Closer to 10" },
+                { "id": "d2_l3_q17", "type": "mc", "prompt": "Part A: Count the animals. Part B: If one animal runs away, how many are left?", "visual": "group: {items:[{type:'hippo', count:9}]}", "data": { "options": ["9, 8 are left", "9, 10 are left", "8, 7 are left"] }, "correct": "9, 8 are left" },
+                { "id": "d2_l3_q18", "type": "mc", "prompt": "Part A: Which number is shown? Part B: Which number is one more?", "visual": "number_card: {number:8}", "data": { "options": ["8, one more is 9", "8, one more is 7", "9, one more is 10"] }, "correct": "8, one more is 9" },
+                { "id": "d2_l3_q19", "type": "mc", "prompt": "Part A: How many empty spaces are in the ten-frame? Part B: How many dots are there?", "visual": "ten_frame: {dot_count:9, dot_color:'black'}", "data": { "options": ["1 empty, 9 dots", "9 empty, 1 dot", "2 empty, 8 dots"] }, "correct": "1 empty, 9 dots" },
+                { "id": "d2_l3_q20", "type": "mc", "prompt": "Part A: Count the elephants. Part B: If you add one more elephant, how many will there be?", "visual": "group: {items:[{type:'elephant', count:8}]}", "data": { "options": ["8, there will be 9", "9, there will be 10", "8, there will be 7"] }, "correct": "8, there will be 9" }
+              ]
+            }
+          },
+          "day3": {
+            "title": "A Perfect Ten on the Savanna",
+            "standard": "K.NR.1.1 - Read, write, and represent numerals 0 to 20.",
+             "sections": {
+                "hook": [
+                    { "id": "d3_hook_1", "type": "content", "prompt": "Hold up all of your fingers! Let's count them together. One, two... all the way to ten! You have a perfect set of 10 counters with you all the time." }
+                ],
+                "i_do": [
+                    { "id": "d3_ido_1", "type": "mc", "prompt": "Count the flamingos. Click the correct number.", "visual": "group: {items:[{type:'flamingo', count:10}]}", "data": { "options": ["9", "10", "11"] }, "correct": "10" },
+                    { "id": "d3_ido_2", "type": "mc", "prompt": "How many dots are in the ten-frame?", "visual": "ten_frame: {dot_count:10, dot_color:'pink'}", "data": { "options": ["8", "9", "10"] }, "correct": "10" },
+                    { "id": "d3_ido_3", "type": "true-false", "prompt": "Is this the number 10?", "visual": "number_card: {number:10}", "data": { "options": ["True", "False"] }, "correct": "True" }
+                ],
+                "we_do": [
+                    { "id": "d3_wedo_1", "type": "mc", "prompt": "Count the gazelles. How many are there?", "visual": "group: {items:[{type:'gazelle', count:10}]}", "data": { "options": ["9", "10", "8"] }, "correct": "10" },
+                    { "id": "d3_wedo_2", "type": "drag-drop-match", "prompt": "Drag the number to match the group of crocodiles.", "visual": "group: {items:[{type:'crocodile', count:10}]}", "data": { "draggables": ["9", "10"], "dropTargets": ["Crocodile Group"] }, "correct": { "10": "Crocodile Group" } },
+                    { "id": "d3_wedo_3", "type": "true-false", "prompt": "Is this ten-frame full?", "visual": "ten_frame: {dot_count:10, dot_color:'green'}", "data": { "options": ["True", "False"] }, "correct": "True" },
+                    { "id": "d3_wedo_4", "type": "mc", "prompt": "Find the group of 10 snakes.", "visual": "group: {items:[{type:'snake', count:10}, {type:'flamingo', count:9}]}", "data": { "options": ["Snake Group", "Flamingo Group"] }, "correct": "Snake Group" },
+                    { "id": "d3_wedo_5", "type": "mc", "prompt": "How many flamingos are there?", "visual": "group: {items:[{type:'flamingo', count:10}]}", "data": { "options": ["10", "9", "8"] }, "correct": "10" },
+                    { "id": "d3_wedo_6", "type": "true-false", "prompt": "Is this the number 9?", "visual": "number_card: {number:10}", "data": { "options": ["True", "False"] }, "correct": "False" },
+                    { "id": "d3_wedo_7", "type": "drag-drop-match", "prompt": "Match the ten-frame to the correct number.", "visual": "ten_frame: {dot_count:10, dot_color:'blue'}", "data": { "draggables": ["9", "10"], "dropTargets": ["Ten-Frame"] }, "correct": { "10": "Ten-Frame" } },
+                    { "id": "d3_wedo_8", "type": "mc", "prompt": "Count the crocodiles. Choose the right number.", "visual": "group: {items:[{type:'crocodile', count:10}]}", "data": { "options": ["8", "9", "10"] }, "correct": "10" },
+                    { "id": "d3_wedo_9", "type": "true-false", "prompt": "Are there 10 gazelles here?", "visual": "group: {items:[{type:'gazelle', count:10}]}", "data": { "options": ["True", "False"] }, "correct": "True" },
+                    { "id": "d3_wedo_10", "type": "mc", "prompt": "A full ten-frame shows what number?", "visual": "ten_frame: {dot_count:10, dot_color:'red'}", "data": { "options": ["9", "10", "8"] }, "correct": "10" }
+                ],
+                "you_do": [
+                    { "id": "d3_youdo_1", "type": "mc", "prompt": "Count the snakes. How many do you see?", "visual": "group: {items:[{type:'snake', count:10}]}", "data": { "options": ["9", "10", "11"] }, "correct": "10" },
+                    { "id": "d3_youdo_2", "type": "true-false", "prompt": "Does this show 9?", "visual": "ten_frame: {dot_count:10, dot_color:'purple'}", "data": { "options": ["True", "False"] }, "correct": "False" },
+                    { "id": "d3_youdo_3", "type": "mc", "prompt": "Click the number 10.", "visual": "", "data": { "options": ["9", "10", "1"] }, "correct": "10" },
+                    { "id": "d3_youdo_4", "type": "drag-drop-match", "prompt": "Drag the number 10 to the group of 10 flamingos.", "visual": "group: {items:[{type:'flamingo', count:10}]}", "data": { "draggables": ["9", "10"], "dropTargets": ["Flamingo Group"] }, "correct": { "10": "Flamingo Group" } },
+                    { "id": "d3_youdo_5", "type": "mc", "prompt": "How many dots?", "visual": "ten_frame: {dot_count:10, dot_color:'orange'}", "data": { "options": ["10", "9", "8"] }, "correct": "10" }
+                ]
+            },
+            "practice_center": {
+              "level1": [
+                { "id": "d3_l1_q1", "type": "mc", "prompt": "How many flamingos?", "visual": "group: {items:[{type:'flamingo', count:10}]}", "data": { "options": ["9", "10", "11"] }, "correct": "10" },
+                { "id": "d3_l1_q2", "type": "mc", "prompt": "How many gazelles?", "visual": "group: {items:[{type:'gazelle', count:10}]}", "data": { "options": ["8", "9", "10"] }, "correct": "10" },
+                { "id": "d3_l1_q3", "type": "mc", "prompt": "How many dots?", "visual": "ten_frame: {dot_count:10, dot_color:'blue'}", "data": { "options": ["10", "9", "8"] }, "correct": "10" },
+                { "id": "d3_l1_q4", "type": "mc", "prompt": "Is this ten-frame full?", "visual": "ten_frame: {dot_count:10, dot_color:'red'}", "data": { "options": ["Yes", "No"] }, "correct": "Yes" },
+                { "id": "d3_l1_q5", "type": "mc", "prompt": "Which number is this?", "visual": "number_card: {number:10}", "data": { "options": ["9", "10", "1"] }, "correct": "10" },
+                { "id": "d3_l1_q6", "type": "mc", "prompt": "Which number comes after 9?", "visual": "", "data": { "options": ["8", "9", "10"] }, "correct": "10" },
+                { "id": "d3_l1_q7", "type": "mc", "prompt": "Count the crocodiles.", "visual": "group: {items:[{type:'crocodile', count:10}]}", "data": { "options": ["10", "9", "11"] }, "correct": "10" },
+                { "id": "d3_l1_q8", "type": "mc", "prompt": "Count the snakes.", "visual": "group: {items:[{type:'snake', count:10}]}", "data": { "options": ["8", "10", "9"] }, "correct": "10" },
+                { "id": "d3_l1_q9", "type": "mc", "prompt": "Find the number 10.", "visual": "", "data": { "options": ["9", "10", "11"] }, "correct": "10" },
+                { "id": "d3_l1_q10", "type": "mc", "prompt": "How many fingers do you have on two hands?", "visual": "", "data": { "options": ["8", "9", "10"] }, "correct": "10" },
+                { "id": "d3_l1_q11", "type": "true-false", "prompt": "Are there 10 flamingos?", "visual": "group: {items:[{type:'flamingo', count:10}]}", "data": { "options": ["True", "False"] }, "correct": "True" },
+                { "id": "d3_l1_q12", "type": "true-false", "prompt": "Are there 9 gazelles?", "visual": "group: {items:[{type:'gazelle', count:10}]}", "data": { "options": ["True", "False"] }, "correct": "False" },
+                { "id": "d3_l1_q13", "type": "true-false", "prompt": "Does the ten-frame show 10?", "visual": "ten_frame: {dot_count:10, dot_color:'green'}", "data": { "options": ["True", "False"] }, "correct": "True" },
+                { "id": "d3_l1_q14", "type": "true-false", "prompt": "Is this the number 1?", "visual": "number_card: {number:10}", "data": { "options": ["True", "False"] }, "correct": "False" },
+                { "id": "d3_l1_q15", "type": "true-false", "prompt": "Are there 10 dots?", "visual": "ten_frame: {dot_count:10, dot_color:'yellow'}", "data": { "options": ["True", "False"] }, "correct": "True" },
+                { "id": "d3_l1_q16", "type": "drag-drop-match", "prompt": "Match the number to the group.", "visual": "group: {items:[{type:'crocodile', count:10}]}", "data": { "draggables": ["9", "10"], "dropTargets": ["Group"] }, "correct": { "10": "Group" } },
+                { "id": "d3_l1_q17", "type": "drag-drop-match", "prompt": "Match the number to the full ten-frame.", "visual": "ten_frame: {dot_count:10, dot_color:'purple'}", "data": { "draggables": ["9", "10"], "dropTargets": ["Ten-Frame"] }, "correct": { "10": "Ten-Frame" } },
+                { "id": "d3_l1_q18", "type": "drag-drop-match", "prompt": "Match the ten-frame to the number.", "visual": "number_card: {number:10}", "data": { "draggables": ["ten_frame with 9 dots", "ten_frame with 10 dots"], "dropTargets": ["Number"] }, "correct": { "ten_frame with 10 dots": "Number" } },
+                { "id": "d3_l1_q19", "type": "drag-drop-match", "prompt": "Match the number to the ten-frame.", "visual": "ten_frame: {dot_count:10, dot_color:'orange'}", "data": { "draggables": ["10", "9"], "dropTargets": ["Ten-Frame"] }, "correct": { "10": "Ten-Frame" } },
+                { "id": "d3_l1_q20", "type": "drag-drop-match", "prompt": "Match the animal group to the number.", "visual": "number_card: {number:10}", "data": { "draggables": ["group of 9 snakes", "group of 10 snakes"], "dropTargets": ["Number"] }, "correct": { "group of 10 snakes": "Number" } }
+              ],
+              "level2": [
+                { "id": "d3_l2_q1", "type": "mc", "prompt": "Which picture shows 10?", "visual": "group: {items:[{type:'gazelle', count:10}]} and ten_frame: {dot_count:9, dot_color:'blue'}", "data": { "options": ["Gazelles", "Ten-Frame", "Neither"] }, "correct": "Gazelles" },
+                { "id": "d3_l2_q2", "type": "mc", "prompt": "I have 9 dots and add 1 more. How many dots do I have?", "visual": "ten_frame: {dot_count:10, dot_color:'green'}", "data": { "options": ["8", "9", "10"] }, "correct": "10" },
+                { "id": "d3_l2_q3", "type": "mc", "prompt": "Which ten-frame is full?", "visual": "ten_frame: {dot_count:10, dot_color:'red'} and ten_frame: {dot_count:9, dot_color:'yellow'}", "data": { "options": ["The red one", "The yellow one", "Both"] }, "correct": "The red one" },
+                { "id": "d3_l2_q4", "type": "mc", "prompt": "Count the animals. Which number is shown?", "visual": "group: {items:[{type:'flamingo', count:10}]}", "data": { "options": ["8", "9", "10"] }, "correct": "10" },
+                { "id": "d3_l2_q5", "type": "mc", "prompt": "A decade is 10 years. Which number is 10?", "visual": "", "data": { "options": ["10", "1 and 0", "ten"] }, "correct": "10" },
+                { "id": "d3_l2_q6", "type": "multi-select", "prompt": "Select all the ways to show 10.", "visual": "", "data": { "options": ["group of 10 crocodiles", "number_card with 10", "full ten_frame", "group of 9 snakes"] }, "correct": ["group of 10 crocodiles", "number_card with 10", "full ten_frame"] },
+                { "id": "d3_l2_q7", "type": "multi-select", "prompt": "Which groups have 10 animals?", "visual": "group: {items:[{type:'flamingo', count:10}, {type:'snake', count:10}, {type:'gazelle', count:9}]}", "data": { "options": ["Flamingos", "Snakes", "Gazelles"] }, "correct": ["Flamingos", "Snakes"] },
+                { "id": "d3_l2_q8", "type": "multi-select", "prompt": "Find all the number 10s.", "visual": "number_card: {number:10}, number_card: {number:9}, number_card: {number:10}", "data": { "options": ["First card", "Second card", "Third card"] }, "correct": ["First card", "Third card"] },
+                { "id": "d3_l2_q9", "type": "multi-select", "prompt": "Select the pictures that show exactly 10.", "visual": "ten_frame: {dot_count:10, dot_color:'purple'}, group: {items:[{type:'crocodile', count:9}]}, ten_frame: {dot_count:10, dot_color:'yellow'}", "data": { "options": ["Purple ten-frame", "Crocodiles", "Yellow ten-frame"] }, "correct": ["Purple ten-frame", "Yellow ten-frame"] },
+                { "id": "d3_l2_q10", "type": "multi-select", "prompt": "Which of these are the number 10?", "visual": "", "data": { "options": ["10", "nine", "ten", "1"] }, "correct": ["10", "ten"] },
+                { "id": "d3_l2_q11", "type": "text-box", "prompt": "Count the flamingos and type the number.", "visual": "group: {items:[{type:'flamingo', count:10}]}", "data": { "size": 2 }, "correct": "10" },
+                { "id": "d3_l2_q12", "type": "text-box", "prompt": "How many dots are in the full ten-frame? Type the number.", "visual": "ten_frame: {dot_count:10, dot_color:'orange'}", "data": { "size": 2 }, "correct": "10" },
+                { "id": "d3_l2_q13", "type": "text-box", "prompt": "There are 9 snakes. One more joins them. How many snakes now?", "visual": "group: {items:[{type:'snake', count:10}]}", "data": { "size": 2 }, "correct": "10" },
+                { "id": "d3_l2_q14", "type": "text-box", "prompt": "What number is made of a 1 and a 0?", "visual": "", "data": { "size": 2 }, "correct": "10" },
+                { "id": "d3_l2_q15", "type": "text-box", "prompt": "Write the number that the ten-frame shows.", "visual": "ten_frame: {dot_count:10, dot_color:'green'}", "data": { "size": 2 }, "correct": "10" },
+                { "id": "d3_l2_q16", "type": "drag-drop-sort", "prompt": "Sort the pictures into groups of 10 and Not 10.", "visual": "", "data": { "items": ["group of 10 gazelles", "group of 9 crocodiles", "ten_frame with 10 dots", "number_card with 9"], "categories": ["Group of 10", "Not 10"] }, "correct": { "Group of 10": ["group of 10 gazelles", "ten_frame with 10 dots"], "Not 10": ["group of 9 crocodiles", "number_card with 9"] } },
+                { "id": "d3_l2_q17", "type": "drag-drop-sort", "prompt": "Put the numbers in the correct boxes.", "visual": "", "data": { "items": ["number_card with 10", "number_card with 9", "number_card with 8", "number_card with 10"], "categories": ["Number 10", "Not Number 10"] }, "correct": { "Number 10": ["number_card with 10", "number_card with 10"], "Not Number 10": ["number_card with 9", "number_card with 8"] } },
+                { "id": "d3_l2_q18", "type": "drag-drop-sort", "prompt": "Sort the ten-frames.", "visual": "", "data": { "items": ["ten_frame with 9 dots", "ten_frame with 10 dots", "ten_frame with 8 dots", "ten_frame with 10 dots"], "categories": ["Full (10)", "Not Full"] }, "correct": { "Full (10)": ["ten_frame with 10 dots", "ten_frame with 10 dots"], "Not Full": ["ten_frame with 9 dots", "ten_frame with 8 dots"] } },
+                { "id": "d3_l2_q19", "type": "drag-drop-sort", "prompt": "Group the animals by number.", "visual": "", "data": { "items": ["group of 10 snakes", "group of 9 gazelles", "group of 10 flamingos", "group of 9 crocodiles"], "categories": ["9 Animals", "10 Animals"] }, "correct": { "9 Animals": ["group of 9 gazelles", "group of 9 crocodiles"], "10 Animals": ["group of 10 snakes", "group of 10 flamingos"] } },
+                { "id": "d3_l2_q20", "type": "drag-drop-sort", "prompt": "Sort the items into 'Ten' and 'Not Ten' buckets.", "visual": "", "data": { "items": ["number_card with 10", "ten_frame with 9 dots", "group of 10 snakes", "9"], "categories": ["Ten", "Not Ten"] }, "correct": { "Ten": ["number_card with 10", "group of 10 snakes"], "Not Ten": ["ten_frame with 9 dots", "9"] } }
+              ],
+              "level3": [
+                { "id": "d3_l3_q1", "type": "mc", "prompt": "There are 5 flamingos in a pond and 5 on the shore. How many flamingos in total?", "visual": "group: {items:[{type:'flamingo', count:10}]}", "data": { "options": ["9", "10", "11"] }, "correct": "10" },
+                { "id": "d3_l3_q2", "type": "mc", "prompt": "A ten-frame is full. If I take away one dot, how many are left?", "visual": "ten_frame: {dot_count:9, dot_color:'red'}", "data": { "options": ["8", "9", "10"] }, "correct": "9" },
+                { "id": "d3_l3_q3", "type": "mc", "prompt": "Which statement is false?", "visual": "group: {items:[{type:'snake', count:10}]} and group: {items:[{type:'gazelle', count:9}]}", "data": { "options": ["There are more snakes than gazelles.", "There are fewer gazelles than snakes.", "There are 10 gazelles."] }, "correct": "There are 10 gazelles." },
+                { "id": "d3_l3_q4", "type": "mc", "prompt": "I am the number of fingers on two hands. What number am I?", "visual": "", "data": { "options": ["8", "9", "10"] }, "correct": "10" },
+                { "id": "d3_l3_q5", "type": "mc", "prompt": "If you have 10 stickers and give one to a friend, how many are left?", "visual": "group: {items:[{type:'sticker', count:9}]}", "data": { "options": ["8", "9", "10"] }, "correct": "9" },
+                { "id": "d3_l3_q6", "type": "text-box", "prompt": "Draw a group of 10 circles. Then, type the number 10.", "visual": "drawing_canvas", "data": { "size": 2 }, "correct": "10" },
+                { "id": "d3_l3_q7", "type": "text-box", "prompt": "Show 10 on the ten-frame using two different colors. How many of your first color did you use?", "visual": "ten_frame: {dot_count:10, dot_color:'bicolor'}", "data": { "size": 2 }, "correct": "Answers will vary" },
+                { "id": "d3_l3_q8", "type": "text-box", "prompt": "A bowling game has 10 pins. You knock down all of them. How many did you knock down?", "visual": "", "data": { "size": 2 }, "correct": "10" },
+                { "id": "d3_l3_q9", "type": "text-box", "prompt": "Find two groups of things that add up to 10. What are they? Then type '10'.", "visual": "", "data": { "size": 20 }, "correct": "10" },
+                { "id": "d3_l3_q10", "type": "text-box", "prompt": "Start at 1 and count up 9. What number are you on?", "visual": "number_line: {start:0, end:10, highlight:1}", "data": { "size": 2 }, "correct": "10" },
+                { "id": "d3_l3_q11", "type": "drag-drop-match", "prompt": "Match the problem to the answer.", "visual": "", "data": { "draggables": ["5 + 5", "1 + 9"], "dropTargets": ["10", "10"] }, "correct": { "5 + 5": "10", "1 + 9": "10" } },
+                { "id": "d3_l3_q12", "type": "drag-drop-sort", "prompt": "Create a pattern. Drag one number to continue the pattern: 8, 9, 10, 8, 9...", "visual": "group: {items:[{type:'number', value:8}, {type:'number', value:9}, {type:'number', value:10}]}", "data": { "items": ["8", "9", "10"], "categories": ["Next in Pattern"] }, "correct": { "Next in Pattern": ["10"] } },
+                { "id": "d3_l3_q13", "type": "drag-drop-match", "prompt": "Match the number word to the numeral.", "visual": "", "data": { "draggables": ["ten", "nine"], "dropTargets": ["10", "9"] }, "correct": { "ten": "10", "nine": "9" } },
+                { "id": "d3_l3_q14", "type": "drag-drop-sort", "prompt": "Put the numbers in order from smallest to largest.", "visual": "", "data": { "items": ["10", "8", "9"], "categories": ["1st", "2nd", "3rd"] }, "correct": { "1st": ["8"], "2nd": ["9"], "3rd": ["10"] } },
+                { "id": "d3_l3_q15", "type": "drag-drop-match", "prompt": "A dime is worth 10 cents. A penny is worth 1 cent. Drag the correct coin to the number 10.", "visual": "number_card: {number:10}", "data": { "draggables": ["dime", "penny"], "dropTargets": ["Number 10"] }, "correct": { "dime": "Number 10" } },
+                { "id": "d3_l3_q16", "type": "mc", "prompt": "Part A: How many dots are in the ten-frame? Part B: How many groups of 5 can you make?", "visual": "ten_frame: {dot_count:10, dot_color:'purple'}", "data": { "options": ["10, 2 groups of 5", "10, 1 group of 5", "9, 1 group of 5"] }, "correct": "10, 2 groups of 5" },
+                { "id": "d3_l3_q17", "type": "mc", "prompt": "Part A: Count the animals. Part B: If they split into two equal groups, how many are in each group?", "visual": "group: {items:[{type:'crocodile', count:10}]}", "data": { "options": ["10, 5 in each group", "10, 4 in each group", "9, you can't make equal groups"] }, "correct": "10, 5 in each group" },
+                { "id": "d3_l3_q18", "type": "mc", "prompt": "Part A: Which number is shown? Part B: Which number is two less?", "visual": "number_card: {number:10}", "data": { "options": ["10, two less is 8", "10, two less is 9", "9, two less is 7"] }, "correct": "10, two less is 8" },
+                { "id": "d3_l3_q19", "type": "mc", "prompt": "Part A: How many empty spaces are in the ten-frame? Part B: How many dots are there?", "visual": "ten_frame: {dot_count:10, dot_color:'black'}", "data": { "options": ["0 empty, 10 dots", "10 empty, 0 dots", "1 empty, 9 dots"] }, "correct": "0 empty, 10 dots" },
+                { "id": "d3_l3_q20", "type": "mc", "prompt": "Part A: Count the gazelles. Part B: If you take away half, how many are left?", "visual": "group: {items:[{type:'gazelle', count:10}]}", "data": { "options": ["10, 5 are left", "10, 8 are left", "8, 4 are left"] }, "correct": "10, 5 are left" }
+              ]
+            }
+          },
+          "day4": {
+            "title": "Safari Showdown: More Than or Fewer Than?",
+            "standard": "K.NR.3.1 - Compare up to 10 objects using 'more than' or 'fewer than'.",
+            "sections": {
+                "hook": [
+                    { "id": "d4_hook_1", "type": "content", "prompt": "Look at my two jars of safari snacks. Without even counting, which one do you think has *more*? Why do you think so? How can we check for sure?" }
+                ],
+                "i_do": [
+                    { "id": "d4_ido_1", "type": "mc", "prompt": "Which group has more?", "visual": "comparison_mat: {group_a: {type:'lion', count:6}, group_b: {type:'zebra', count:8}}", "data": { "options": ["Lions", "Zebras"] }, "correct": "Zebras" },
+                    { "id": "d4_ido_2", "type": "mc", "prompt": "Which group has fewer?", "visual": "comparison_mat: {group_a: {type:'monkey', count:9}, group_b: {type:'banana', count:7}}", "data": { "options": ["Monkeys", "Bananas"] }, "correct": "Bananas" },
+                    { "id": "d4_ido_3", "type": "true-false", "prompt": "Is 10 more than 8?", "visual": "number_card: {number:10} and number_card: {number:8}", "data": { "options": ["True", "False"] }, "correct": "True" }
+                ],
+                "we_do": [
+                    { "id": "d4_wedo_1", "type": "mc", "prompt": "Are there more elephants or hippos?", "visual": "comparison_mat: {group_a: {type:'elephant', count:10}, group_b: {type:'hippo', count:7}}", "data": { "options": ["Elephants", "Hippos"] }, "correct": "Elephants" },
+                    { "id": "d4_wedo_2", "type": "mc", "prompt": "Which group has fewer animals?", "visual": "comparison_mat: {group_a: {type:'rhino', count:6}, group_b: {type:'wildebeest', count:9}}", "data": { "options": ["Rhinos", "Wildebeest"] }, "correct": "Rhinos" },
+                    { "id": "d4_wedo_3", "type": "true-false", "prompt": "Are there fewer parrots than monkeys?", "visual": "comparison_mat: {group_a: {type:'parrot', count:8}, group_b: {type:'monkey', count:9}}", "data": { "options": ["True", "False"] }, "correct": "True" },
+                    { "id": "d4_wedo_4", "type": "mc", "prompt": "Which number is more than 7?", "visual": "", "data": { "options": ["6", "8"] }, "correct": "8" },
+                    { "id": "d4_wedo_5", "type": "mc", "prompt": "Which number is less than 9?", "visual": "", "data": { "options": ["10", "8"] }, "correct": "8" },
+                    { "id": "d4_wedo_6", "type": "true-false", "prompt": "Is 7 the same as 7?", "visual": "comparison_mat: {group_a: {type:'dot', count:7}, group_b: {type:'dot', count:7}}", "data": { "options": ["True", "False"] }, "correct": "True" },
+                    { "id": "d4_wedo_7", "type": "mc", "prompt": "Which group has more?", "visual": "comparison_mat: {group_a: {type:'lion', count:9}, group_b: {type:'zebra', count:6}}", "data": { "options": ["Lions", "Zebras"] }, "correct": "Lions" },
+                    { "id": "d4_wedo_8", "type": "mc", "prompt": "Which group has fewer?", "visual": "comparison_mat: {group_a: {type:'flamingo', count:10}, group_b: {type:'snake', count:8}}", "data": { "options": ["Flamingos", "Snakes"] }, "correct": "Snakes" },
+                    { "id": "d4_wedo_9", "type": "true-false", "prompt": "Is 6 fewer than 9?", "visual": "", "data": { "options": ["True", "False"] }, "correct": "True" },
+                    { "id": "d4_wedo_10", "type": "mc", "prompt": "Click the number that is MORE.", "visual": "number_card: {number:7} and number_card: {number:9}", "data": { "options": ["7", "9"] }, "correct": "9" }
+                ],
+                "you_do": [
+                    { "id": "d4_youdo_1", "type": "mc", "prompt": "Which group has more animals?", "visual": "comparison_mat: {group_a: {type:'crocodile', count:10}, group_b: {type:'gazelle', count:8}}", "data": { "options": ["Crocodiles", "Gazelles"] }, "correct": "Crocodiles" },
+                    { "id": "d4_youdo_2", "type": "mc", "prompt": "Which group has fewer?", "visual": "comparison_mat: {group_a: {type:'ten_frame', dot_count:6}, group_b: {type:'ten_frame', dot_count:8}}", "data": { "options": ["First ten-frame", "Second ten-frame"] }, "correct": "First ten-frame" },
+                    { "id": "d4_youdo_3", "type": "true-false", "prompt": "Is 9 more than 10?", "visual": "", "data": { "options": ["True", "False"] }, "correct": "False" },
+                    { "id": "d4_youdo_4", "type": "mc", "prompt": "Click the number that is FEWER.", "visual": "number_card: {number:6} and number_card: {number:9}", "data": { "options": ["6", "9"] }, "correct": "6" },
+                    { "id": "d4_youdo_5", "type": "mc", "prompt": "Are there more dots or fewer dots than 8?", "visual": "ten_frame: {dot_count:7, dot_color:'blue'}", "data": { "options": ["More", "Fewer"] }, "correct": "Fewer" }
+                ]
+            },
+            "practice_center": {
+              "level1": [
+                { "id": "d4_l1_q1", "type": "mc", "prompt": "Which group has more?", "visual": "comparison_mat: {group_a: {type:'lion', count:7}, group_b: {type:'zebra', count:6}}", "data": { "options": ["Lions", "Zebras"] }, "correct": "Lions" },
+                { "id": "d4_l1_q2", "type": "mc", "prompt": "Which group has more?", "visual": "comparison_mat: {group_a: {type:'monkey', count:8}, group_b: {type:'parrot', count:9}}", "data": { "options": ["Monkeys", "Parrots"] }, "correct": "Parrots" },
+                { "id": "d4_l1_q3", "type": "mc", "prompt": "Which group has fewer?", "visual": "comparison_mat: {group_a: {type:'elephant', count:10}, group_b: {type:'hippo', count:8}}", "data": { "options": ["Elephants", "Hippos"] }, "correct": "Hippos" },
+                { "id": "d4_l1_q4", "type": "mc", "prompt": "Which group has fewer?", "visual": "comparison_mat: {group_a: {type:'rhino', count:6}, group_b: {type:'wildebeest', count:7}}", "data": { "options": ["Rhinos", "Wildebeest"] }, "correct": "Rhinos" },
+                { "id": "d4_l1_q5", "type": "mc", "prompt": "Click the number that is more.", "visual": "", "data": { "options": ["8", "6"] }, "correct": "8" },
+                { "id": "d4_l1_q6", "type": "mc", "prompt": "Click the number that is more.", "visual": "", "data": { "options": ["9", "10"] }, "correct": "10" },
+                { "id": "d4_l1_q7", "type": "mc", "prompt": "Click the number that is fewer.", "visual": "", "data": { "options": ["7", "9"] }, "correct": "7" },
+                { "id": "d4_l1_q8", "type": "mc", "prompt": "Click the number that is fewer.", "visual": "", "data": { "options": ["10", "6"] }, "correct": "6" },
+                { "id": "d4_l1_q9", "type": "mc", "prompt": "Which ten-frame has more dots?", "visual": "comparison_mat: {group_a: {type:'ten_frame', dot_count:7}, group_b: {type:'ten_frame', dot_count:9}}", "data": { "options": ["First", "Second"] }, "correct": "Second" },
+                { "id": "d4_l1_q10", "type": "mc", "prompt": "Which ten-frame has fewer dots?", "visual": "comparison_mat: {group_a: {type:'ten_frame', dot_count:10}, group_b: {type:'ten_frame', dot_count:8}}", "data": { "options": ["First", "Second"] }, "correct": "Second" },
+                { "id": "d4_l1_q11", "type": "true-false", "prompt": "Is 8 more than 6?", "visual": "", "data": { "options": ["True", "False"] }, "correct": "True" },
+                { "id": "d4_l1_q12", "type": "true-false", "prompt": "Is 7 fewer than 9?", "visual": "", "data": { "options": ["True", "False"] }, "correct": "True" },
+                { "id": "d4_l1_q13", "type": "true-false", "prompt": "Is 10 fewer than 8?", "visual": "", "data": { "options": ["True", "False"] }, "correct": "False" },
+                { "id": "d4_l1_q14", "type": "true-false", "prompt": "Are there more lions than zebras?", "visual": "comparison_mat: {group_a: {type:'lion', count:6}, group_b: {type:'zebra', count:9}}", "data": { "options": ["True", "False"] }, "correct": "False" },
+                { "id": "d4_l1_q15", "type": "true-false", "prompt": "Are there the same number of dots?", "visual": "comparison_mat: {group_a: {type:'ten_frame', dot_count:8}, group_b: {type:'ten_frame', dot_count:8}}", "data": { "options": ["True", "False"] }, "correct": "True" },
+                { "id": "d4_l1_q16", "type": "drag-drop-match", "prompt": "Match the word to the correct group.", "visual": "comparison_mat: {group_a: {type:'monkey', count:7}, group_b: {type:'parrot', count:10}}", "data": { "draggables": ["More", "Fewer"], "dropTargets": ["Monkeys", "Parrots"] }, "correct": { "More": "Parrots", "Fewer": "Monkeys" } },
+                { "id": "d4_l1_q17", "type": "drag-drop-match", "prompt": "Match the word to the correct group.", "visual": "comparison_mat: {group_a: {type:'elephant', count:8}, group_b: {type:'hippo', count:6}}", "data": { "draggables": ["More", "Fewer"], "dropTargets": ["Elephants", "Hippos"] }, "correct": { "More": "Elephants", "Fewer": "Hippos" } },
+                { "id": "d4_l1_q18", "type": "drag-drop-match", "prompt": "Match the number to the word 'More'.", "visual": "number_card: {number:9}", "data": { "draggables": ["8", "10"], "dropTargets": ["More than 9"] }, "correct": { "10": "More than 9" } },
+                { "id": "d4_l1_q19", "type": "drag-drop-match", "prompt": "Match the number to the word 'Fewer'.", "visual": "number_card: {number:7}", "data": { "draggables": ["6", "8"], "dropTargets": ["Fewer than 7"] }, "correct": { "6": "Fewer than 7" } },
+                { "id": "d4_l1_q20", "type": "drag-drop-match", "prompt": "Match the groups that are the same.", "visual": "group: {items:[{type:'rhino', count:6}]}", "data": { "draggables": ["group of 6 dots", "group of 7 dots"], "dropTargets": ["Rhino group"] }, "correct": { "group of 6 dots": "Rhino group" } }
+              ],
+              "level2": [
+                { "id": "d4_l2_q1", "type": "mc", "prompt": "There are 7 lions and 9 zebras at the waterhole. Which group has fewer animals?", "visual": "", "data": { "options": ["Lions", "Zebras", "They are the same"] }, "correct": "Lions" },
+                { "id": "d4_l2_q2", "type": "mc", "prompt": "Which number is greater than 8?", "visual": "", "data": { "options": ["7", "8", "9"] }, "correct": "9" },
+                { "id": "d4_l2_q3", "type": "mc", "prompt": "Which statement is true?", "visual": "", "data": { "options": ["6 is more than 8", "10 is fewer than 9", "7 is more than 6"] }, "correct": "7 is more than 6" },
+                { "id": "d4_l2_q4", "type": "mc", "prompt": "Which ten-frame shows a number less than 8?", "visual": "comparison_mat: {group_a: {type:'ten_frame', dot_count:7}, group_b: {type:'ten_frame', dot_count:9}}", "data": { "options": ["First", "Second", "Neither"] }, "correct": "First" },
+                { "id": "d4_l2_q5", "type": "mc", "prompt": "I have 10 cookies. You have 8. Who has more?", "visual": "", "data": { "options": ["I do", "You do", "We have the same"] }, "correct": "I do" },
+                { "id": "d4_l2_q6", "type": "multi-select", "prompt": "Select all numbers that are MORE than 7.", "visual": "", "data": { "options": ["6", "8", "9", "7"] }, "correct": ["8", "9"] },
+                { "id": "d4_l2_q7", "type": "multi-select", "prompt": "Select all numbers that are FEWER than 9.", "visual": "", "data": { "options": ["10", "8", "7", "9"] }, "correct": ["8", "7"] },
+                { "id": "d4_l2_q8", "type": "multi-select", "prompt": "Which groups have more than 8 animals?", "visual": "group: {items:[{type:'lion', count:9}, {type:'zebra', count:8}, {type:'monkey', count:10}]}", "data": { "options": ["Lions", "Zebras", "Monkeys"] }, "correct": ["Lions", "Monkeys"] },
+                { "id": "d4_l2_q9", "type": "multi-select", "prompt": "Which statements are true?", "visual": "", "data": { "options": ["10 is more than 8", "6 is more than 7", "9 is fewer than 10"] }, "correct": ["10 is more than 8", "9 is fewer than 10"] },
+                { "id": "d4_l2_q10", "type": "multi-select", "prompt": "Select all the ten-frames that show a number greater than 6.", "visual": "ten_frame: {dot_count:6}, ten_frame: {dot_count:8}, ten_frame: {dot_count:7}", "data": { "options": ["First", "Second", "Third"] }, "correct": ["Second", "Third"] },
+                { "id": "d4_l2_q11", "type": "text-box", "prompt": "Count the two groups. Type the number of the group that has MORE.", "visual": "comparison_mat: {group_a: {type:'elephant', count:7}, group_b: {type:'hippo', count:9}}", "data": { "size": 2 }, "correct": "9" },
+                { "id": "d4_l2_q12", "type": "text-box", "prompt": "Count the two groups. Type the number of the group that has FEWER.", "visual": "comparison_mat: {group_a: {type:'rhino', count:10}, group_b: {type:'wildebeest', count:6}}", "data": { "size": 2 }, "correct": "6" },
+                { "id": "d4_l2_q13", "type": "text-box", "prompt": "What is one number that is more than 8?", "visual": "", "data": { "size": 2 }, "correct": "9" },
+                { "id": "d4_l2_q14", "type": "text-box", "prompt": "What is one number that is less than 7?", "visual": "", "data": { "size": 2 }, "correct": "6" },
+                { "id": "d4_l2_q15", "type": "text-box", "prompt": "How many more dots are in the second ten-frame?", "visual": "comparison_mat: {group_a: {type:'ten_frame', dot_count:7}, group_b: {type:'ten_frame', dot_count:9}}", "data": { "size": 2 }, "correct": "2" },
+                { "id": "d4_l2_q16", "type": "drag-drop-sort", "prompt": "Sort the numbers into 'More than 8' and 'Fewer than 8'.", "visual": "", "data": { "items": ["7", "9", "10", "6"], "categories": ["More than 8", "Fewer than 8"] }, "correct": { "More than 8": ["9", "10"], "Fewer than 8": ["7", "6"] } },
+                { "id": "d4_l2_q17", "type": "drag-drop-sort", "prompt": "Sort the animal groups.", "visual": "", "data": { "items": ["group of 6 lions", "group of 9 zebras", "group of 10 monkeys", "group of 8 parrots"], "categories": ["Fewer than 9", "9 or More"] }, "correct": { "Fewer than 9": ["group of 6 lions", "group of 8 parrots"], "9 or More": ["group of 9 zebras", "group of 10 monkeys"] } },
+                { "id": "d4_l2_q18", "type": "drag-drop-sort", "prompt": "Sort the ten-frames.", "visual": "", "data": { "items": ["ten_frame with 10 dots", "ten_frame with 7 dots", "ten_frame with 9 dots", "ten_frame with 6 dots"], "categories": ["More than 7", "7 or Fewer"] }, "correct": { "More than 7": ["ten_frame with 10 dots", "ten_frame with 9 dots"], "7 or Fewer": ["ten_frame with 7 dots", "ten_frame with 6 dots"] } },
+                { "id": "d4_l2_q19", "type": "drag-drop-sort", "prompt": "Sort the numbers as 'Greater than 7' or 'Less than 7'.", "visual": "", "data": { "items": ["6", "8", "9", "10"], "categories": ["Greater than 7", "Less than 7"] }, "correct": { "Greater than 7": ["8", "9", "10"], "Less than 7": ["6"] } },
+                { "id": "d4_l2_q20", "type": "drag-drop-sort", "prompt": "Sort the numbers into the correct boxes.", "visual": "", "data": { "items": ["6", "7", "8", "9", "10"], "categories": ["Equal to or More than 8", "Less than 8"] }, "correct": { "Equal to or More than 8": ["8", "9", "10"], "Less than 8": ["6", "7"] } }
+              ],
+              "level3": [
+                { "id": "d4_l3_q1", "type": "mc", "prompt": "There are 4 lions and 3 zebras. There are also 5 monkeys and 4 parrots. Which group of animals is larger, the cat/dog-like group or the primate/bird group?", "visual": "", "data": { "options": ["Cat/dog-like group (7)", "Primate/bird group (9)"] }, "correct": "Primate/bird group (9)" },
+                { "id": "d4_l3_q2", "type": "mc", "prompt": "A ten-frame has 2 empty spots. Another has 4 empty spots. Which ten-frame has more dots?", "visual": "", "data": { "options": ["The one with 2 empty spots (8 dots)", "The one with 4 empty spots (6 dots)"] }, "correct": "The one with 2 empty spots (8 dots)" },
+                { "id": "d4_l3_q3", "type": "mc", "prompt": "Which statement is true? A) 6 is one more than 7. B) 9 is one less than 10. C) 8 and 8 are not the same.", "visual": "", "data": { "options": ["A", "B", "C"] }, "correct": "B" },
+                { "id": "d4_l3_q4", "type": "mc", "prompt": "I am a number. I am more than 7. I am less than 9. What number am I?", "visual": "", "data": { "options": ["7", "8", "9"] }, "correct": "8" },
+                { "id": "d4_l3_q5", "type": "mc", "prompt": "You have 6 stickers. Your friend has 8. How many more stickers does your friend have?", "visual": "", "data": { "options": ["1 more", "2 more", "3 more"] }, "correct": "2 more" },
+                { "id": "d4_l3_q6", "type": "text-box", "prompt": "Draw a group of circles that is MORE than 7 but FEWER than 10. Type the number you drew.", "visual": "drawing_canvas", "data": { "size": 2 }, "correct": "8" },
+                { "id": "d4_l3_q7", "type": "text-box", "prompt": "Show a number on the ten-frame that is one less than 10. Type the number.", "visual": "ten_frame: {dot_count:9, dot_color:'blue'}", "data": { "size": 2 }, "correct": "9" },
+                { "id": "d4_l3_q8", "type": "text-box", "prompt": "There are 10 children in a line. You are 8th. How many children are behind you? Type the number.", "visual": "", "data": { "size": 2 }, "correct": "2" },
+                { "id": "d4_l3_q9", "type": "text-box", "prompt": "Find two numbers between 5 and 10 that are NOT the same. Type the larger number.", "visual": "", "data": { "size": 2 }, "correct": "Answers will vary" },
+                { "id": "d4_l3_q10", "type": "text-box", "prompt": "Start at 10 and count back 3. What number are you on?", "visual": "number_line: {start:0, end:10, highlight:10}", "data": { "size": 2 }, "correct": "7" },
+                { "id": "d4_l3_q11", "type": "drag-drop-match", "prompt": "Match the description to the number.", "visual": "", "data": { "draggables": ["One more than 8", "One less than 8"], "dropTargets": ["7", "9"] }, "correct": { "One more than 8": "9", "One less than 8": "7" } },
+                { "id": "d4_l3_q12", "type": "drag-drop-sort", "prompt": "Put the numbers in order from smallest to largest.", "visual": "", "data": { "items": ["8", "6", "10", "7", "9"], "categories": ["1st", "2nd", "3rd", "4th", "5th"] }, "correct": { "1st": ["6"], "2nd": ["7"], "3rd": ["8"], "4th": ["9"], "5th": ["10"] } },
+                { "id": "d4_l3_q13", "type": "drag-drop-match", "prompt": "Match the number word to the description.", "visual": "", "data": { "draggables": ["ten", "six"], "dropTargets": ["More than nine", "Fewer than seven"] }, "correct": { "ten": "More than nine", "six": "Fewer than seven" } },
+                { "id": "d4_l3_q14", "type": "drag-drop-sort", "prompt": "Put the groups in order from fewest to most.", "visual": "", "data": { "items": ["group of 8", "group of 10", "group of 7"], "categories": ["Fewest", "Middle", "Most"] }, "correct": { "Fewest": ["group of 7"], "Middle": ["group of 8"], "Most": ["group of 10"] } },
+                { "id": "d4_l3_q15", "type": "drag-drop-match", "prompt": "A week has 7 days. A work-week has 5 days. Drag 'week' or 'work-week' to the group that has more.", "visual": "comparison_mat: {group_a: {type:'day', count:7}, group_b: {type:'day', count:5}}", "data": { "draggables": ["week", "work-week"], "dropTargets": ["More", "Fewer"] }, "correct": { "week": "More", "work-week": "Fewer" } },
+                { "id": "d4_l3_q16", "type": "mc", "prompt": "Part A: Which group has more? Part B: How many more?", "visual": "comparison_mat: {group_a: {type:'dot', count:9}, group_b: {type:'dot', count:6}}", "data": { "options": ["Group A has 3 more", "Group B has 3 more", "Group A has 2 more"] }, "correct": "Group A has 3 more" },
+                { "id": "d4_l3_q17", "type": "mc", "prompt": "Part A: Is 7 more or fewer than 9? Part B: Is 10 more or fewer than 9?", "visual": "", "data": { "options": ["Fewer, More", "More, Fewer", "Fewer, Fewer"] }, "correct": "Fewer, More" },
+                { "id": "d4_l3_q18", "type": "mc", "prompt": "Part A: Which number is one more than 8? Part B: Which number is one less than 8?", "visual": "", "data": { "options": ["A is 9, B is 7", "A is 7, B is 9", "A is 9, B is 9"] }, "correct": "A is 9, B is 7" },
+                { "id": "d4_l3_q19", "type": "mc", "prompt": "Part A: Which number is shown? Part B: Is this number closer to 0 or 10?", "visual": "number_card: {number:6}", "data": { "options": ["6, Closer to 10", "7, Closer to 10", "6, Closer to 0"] }, "correct": "6, Closer to 10" },
+                { "id": "d4_l3_q20", "type": "mc", "prompt": "Part A: Which group is smaller? Part B: How many would you need to add to make it equal to the larger group?", "visual": "comparison_mat: {group_a: {type:'lion', count:10}, group_b: {type:'zebra', count:8}}", "data": { "options": ["Zebras, add 2", "Lions, add 2", "Zebras, add 3"] }, "correct": "Zebras, add 2" }
+              ]
+            }
+          }
+        };
+
+        // --- STATE MANAGEMENT ---
+        // This object holds the current state of the application.
+        let appState = {
+            activeDay: 'day1',
+            currentMode: 'lesson', // 'lesson' or 'practice'
+            progress: {}, // Stores answers and current slide index for each day/mode
+            practiceLevel: 'level1',
+            correctStreak: 0
+        };
+
+        const POSITIVE_FEEDBACK = ["Wildly correct!", "You're a counting king!", "Roaring success!", "Amazing observation!", "Great discovery!"];
+
+        // --- SVG & DYNAMIC ELEMENT GENERATION ---
+
+        /**
+         * Creates SVG elements programmatically.
+         * @param {string} tag - The SVG tag name (e.g., 'svg', 'circle', 'rect').
+         * @param {object} attrs - An object of attributes to set on the element.
+         * @returns {SVGElement} The created SVG element.
+         */
+        const createSvgElement = (tag, attrs) => {
+            const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+            for (let key in attrs) {
+                el.setAttribute(key, attrs[key]);
+            }
+            return el;
+        };
+        
+        /**
+         * Generates an SVG visual based on a descriptive string.
+         * @param {string} visualString - The description from the question object.
+         * @returns {SVGElement|null} The generated SVG element or null if no visual.
+         */
+        const generateVisual = (visualString) => {
+            if (!visualString) return null;
+
+            const svg = createSvgElement('svg', { viewBox: '0 0 400 200', class: 'w-full h-auto max-w-lg mx-auto' });
+            
+            // Simple parser for the visual string
+            const [type, paramsStr] = visualString.split(/:(.+)/);
+            let params = {};
+            if (paramsStr) {
+                try {
+                    // A simple eval-like parser for the object string
+                    params = new Function(`return ${paramsStr}`)();
+                } catch (e) {
+                    console.error("Could not parse visual params:", paramsStr, e);
+                    return null;
+                }
+            }
+            
+            switch (type.trim()) {
+                case 'ten_frame':
+                    const { dot_count = 0, dot_color = 'black' } = params;
+                    const frame = createSvgElement('g');
+                    frame.appendChild(createSvgElement('rect', { x: 50, y: 50, width: 300, height: 120, fill: 'none', stroke: '#8B4513', 'stroke-width': 3 }));
+                    frame.appendChild(createSvgElement('line', { x1: 200, y1: 50, x2: 200, y2: 170, stroke: '#8B4513', 'stroke-width': 3 }));
+                    for(let i = 0; i < 4; i++) {
+                        frame.appendChild(createSvgElement('line', { x1: 50 + (i+1)*60, y1: 50, x2: 50 + (i+1)*60, y2: 170, stroke: '#8B4513', 'stroke-width': 2, 'stroke-dasharray': '2 2' }));
+                    }
+
+                    for (let i = 0; i < dot_count; i++) {
+                        const cx = 80 + (i % 5) * 60;
+                        const cy = i < 5 ? 80 : 140;
+                        frame.appendChild(createSvgElement('circle', { cx, cy, r: 20, fill: dot_color }));
+                    }
+                    svg.appendChild(frame);
+                    break;
+
+                case 'number_card':
+                    const { number = '?' } = params;
+                    const card = createSvgElement('g');
+                    card.appendChild(createSvgElement('rect', { x: 125, y: 50, width: 150, height: 100, rx: 10, fill: '#FFF8DC', stroke: '#8B4513', 'stroke-width': 3 }));
+                    const text = createSvgElement('text', { x: 200, y: 115, 'font-size': '60px', 'font-weight': 'bold', fill: '#4B3A26', 'text-anchor': 'middle' });
+                    text.textContent = number;
+                    card.appendChild(text);
+                    svg.appendChild(card);
+                    break;
+                
+                case 'group':
+                    const { items = [] } = params;
+                    const group = createSvgElement('g');
+                    let totalItems = 0;
+                    items.forEach(item => totalItems += item.count);
+                    
+                    let currentItem = 0;
+                    items.forEach(item => {
+                        for(let i = 0; i < item.count; i++) {
+                           const angle = (currentItem / totalItems) * 2 * Math.PI;
+                           const radius = 60 + (Math.random() * 20);
+                           const cx = 200 + radius * Math.cos(angle) + (Math.random() - 0.5) * 40;
+                           const cy = 100 + radius * Math.sin(angle) + (Math.random() - 0.5) * 40;
+                           const emoji = createSvgElement('text', { x: cx, y: cy, 'font-size': '40px', 'text-anchor': 'middle' });
+                           emoji.textContent = getAnimalEmoji(item.type);
+                           group.appendChild(emoji);
+                           currentItem++;
+                        }
+                    });
+                    svg.appendChild(group);
+                    break;
+
+                 case 'comparison_mat':
+                    const { group_a, group_b } = params;
+                    const mat = createSvgElement('g');
+                    mat.appendChild(createSvgElement('rect', { x: 10, y: 20, width: 180, height: 160, rx: 10, fill: '#F0EAD6', stroke: '#D2B48C', 'stroke-width': 2 }));
+                    mat.appendChild(createSvgElement('rect', { x: 210, y: 20, width: 180, height: 160, rx: 10, fill: '#F0EAD6', stroke: '#D2B48C', 'stroke-width': 2 }));
+                    
+                    // Render group A
+                    for(let i = 0; i < group_a.count; i++) {
+                        const emoji = createSvgElement('text', { x: 40 + (i%4)*40, y: 60 + Math.floor(i/4)*50, 'font-size': '30px' });
+                        emoji.textContent = getAnimalEmoji(group_a.type);
+                        mat.appendChild(emoji);
+                    }
+                    // Render group B
+                    for(let i = 0; i < group_b.count; i++) {
+                        const emoji = createSvgElement('text', { x: 240 + (i%4)*40, y: 60 + Math.floor(i/4)*50, 'font-size': '30px' });
+                        emoji.textContent = getAnimalEmoji(group_b.type);
+                        mat.appendChild(emoji);
+                    }
+                    svg.appendChild(mat);
+                    break;
+            }
+            return svg;
+        };
+
+        const getAnimalEmoji = (type) => {
+            const map = {
+                'zebra': '🦓', 'monkey': '🐒', 'parrot': '🦜', 'lion': '🦁',
+                'elephant': '🐘', 'wildebeest': '🐃', 'hippo': '🦛', 'rhino': '🦏',
+                'flamingo': '🦩', 'gazelle': '🦌', 'crocodile': '🐊', 'snake': '🐍',
+                'banana': '🍌', 'dot': '⚫️', 'insect': '🐞', 'cookie': '🍪'
+            };
+            return map[type] || '❓';
+        };
+
+        // --- APPLICATION LOGIC ---
+
+        /**
+         * Initializes the application.
+         */
+        const init = () => {
+            loadProgress();
+            renderTabs();
+            renderDay(appState.activeDay);
+            setupEventListeners();
+        };
+
+        /**
+         * Renders the main day tabs.
+         */
+        const renderTabs = () => {
+            const tabsContainer = document.getElementById('main-tabs');
+            tabsContainer.innerHTML = '';
+            Object.keys(lessonData).forEach(dayKey => {
+                const dayNum = dayKey.replace('day', '');
+                const button = document.createElement('button');
+                button.className = `tab-btn ${appState.activeDay === dayKey ? 'active' : ''}`;
+                button.textContent = `Day ${dayNum}`;
+                button.dataset.day = dayKey;
+                tabsContainer.appendChild(button);
+            });
+        };
+
+        /**
+         * Renders the entire content for a given day.
+         * @param {string} dayKey - The key for the day (e.g., 'day1').
+         */
+        const renderDay = (dayKey) => {
+            const dayData = lessonData[dayKey];
+            const contentArea = document.getElementById('content-area');
+            
+            // Ensure progress object exists for this day
+            if (!appState.progress[dayKey]) {
+                appState.progress[dayKey] = {
+                    lesson: { slideIndex: 0, answers: {} },
+                    practice: { slideIndex: 0, answers: {} }
+                };
+            }
+
+            contentArea.innerHTML = `
+                <div class="day-container" data-day="${dayKey}">
+                    <div class="flex justify-between items-center mb-4">
+                        <button class="mode-toggle-btn safari-btn" data-mode="${appState.currentMode === 'lesson' ? 'practice' : 'lesson'}">
+                            Go to ${appState.currentMode === 'lesson' ? 'Practice' : 'Lesson'}
+                        </button>
+                        <div id="streak-counter" class="text-2xl font-bold ${appState.currentMode === 'practice' ? '' : 'hidden'}">
+                            ⭐ Streak: ${appState.correctStreak}
+                        </div>
+                    </div>
+                    <div id="lesson-view" class="${appState.currentMode === 'lesson' ? '' : 'hidden'}"></div>
+                    <div id="practice-view" class="${appState.currentMode === 'practice' ? '' : 'hidden'}"></div>
+                </div>
+            `;
+            
+            if (appState.currentMode === 'lesson') {
+                renderLessonView(dayKey);
+            } else {
+                renderPracticeView(dayKey);
+            }
+        };
+        
+        /**
+         * Renders the lesson view with slides.
+         * @param {string} dayKey - The key for the day.
+         */
+        const renderLessonView = (dayKey) => {
+            const dayData = lessonData[dayKey];
+            const lessonContainer = document.getElementById('lesson-view');
+            const lessonProgress = appState.progress[dayKey].lesson;
+            
+            const allSlides = [
+                ...dayData.sections.hook,
+                ...dayData.sections.i_do,
+                ...dayData.sections.we_do,
+                ...dayData.sections.you_do
+            ];
+
+            lessonContainer.innerHTML = `
+                <h2 class="text-3xl font-bold text-center mb-2">${dayData.title}</h2>
+                <p class="text-center text-lg italic mb-4">${dayData.standard}</p>
+                <div id="lesson-slides-container"></div>
+                <div class="flex justify-between items-center mt-4">
+                    <button id="lesson-prev-btn" class="safari-btn">⬅️ Previous</button>
+                    <div id="lesson-progress-bar" class="w-1/2 h-8 bg-[#D2B48C] rounded-full border-2 border-[#8B4513]">
+                        <div class="h-full bg-green-500 rounded-full transition-all duration-300" style="width: ${((lessonProgress.slideIndex + 1) / allSlides.length) * 100}%"></div>
+                    </div>
+                    <button id="lesson-next-btn" class="safari-btn">Next ➡️</button>
+                </div>
+            `;
+            
+            renderSlide('lesson', dayKey, lessonProgress.slideIndex);
+        };
+
+        /**
+         * Renders the practice center view.
+         * @param {string} dayKey - The key for the day.
+         */
+        const renderPracticeView = (dayKey) => {
+            const practiceContainer = document.getElementById('practice-view');
+            const practiceProgress = appState.progress[dayKey].practice;
+            const level = appState.practiceLevel;
+            const questions = lessonData[dayKey].practice_center[level];
+
+            practiceContainer.innerHTML = `
+                <div class="flex justify-center items-center mb-4 space-x-4">
+                    <h2 class="text-3xl font-bold">Practice Center</h2>
+                    <select id="level-select" class="safari-btn">
+                        <option value="level1" ${level === 'level1' ? 'selected' : ''}>Level 1: Approaching</option>
+                        <option value="level2" ${level === 'level2' ? 'selected' : ''}>Level 2: On Level</option>
+                        <option value="level3" ${level === 'level3' ? 'selected' : ''}>Level 3: Exceeding</option>
+                    </select>
+                </div>
+                <div id="practice-slides-container"></div>
+                 <div class="flex justify-between items-center mt-4">
+                    <button id="practice-prev-btn" class="safari-btn">⬅️ Previous</button>
+                    <span class="font-bold text-lg">${practiceProgress.slideIndex + 1} / ${questions.length}</span>
+                    <button id="practice-next-btn" class="safari-btn">Next ➡️</button>
+                </div>
+            `;
+            
+            renderSlide('practice', dayKey, practiceProgress.slideIndex);
+        };
+
+        /**
+         * Renders a specific slide for either lesson or practice.
+         * @param {string} mode - 'lesson' or 'practice'.
+         * @param {string} dayKey - The key for the day.
+         * @param {number} slideIndex - The index of the slide to render.
+         */
+        const renderSlide = (mode, dayKey, slideIndex) => {
+            const containerId = `${mode}-slides-container`;
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            let slideData;
+            if (mode === 'lesson') {
+                const sections = lessonData[dayKey].sections;
+                const allSlides = [...sections.hook, ...sections.i_do, ...sections.we_do, ...sections.you_do];
+                slideData = allSlides[slideIndex];
+            } else {
+                const level = appState.practiceLevel;
+                slideData = lessonData[dayKey].practice_center[level][slideIndex];
+            }
+
+            if (!slideData) return;
+
+            const slideElement = document.createElement('div');
+            slideElement.className = 'slide flex flex-col items-center justify-center text-center';
+            slideElement.dataset.id = slideData.id;
+
+            const visualElement = generateVisual(slideData.visual);
+            
+            slideElement.innerHTML = `
+                <p class="text-2xl mb-4">${slideData.prompt}</p>
+                ${visualElement ? `<div class="visual-container mb-4">${visualElement.outerHTML}</div>` : ''}
+                <div class="interactive-area w-full max-w-2xl"></div>
+                <div class="feedback-area mt-4 w-full max-w-2xl"></div>
+            `;
+
+            container.innerHTML = '';
+            container.appendChild(slideElement);
+            
+            const interactiveArea = slideElement.querySelector('.interactive-area');
+            renderInteractiveElement(interactiveArea, slideData);
+
+            // Restore saved answer
+            const savedAnswer = appState.progress[dayKey][mode].answers[slideData.id];
+            if (savedAnswer) {
+                restoreAnswer(slideElement, slideData.type, savedAnswer);
+                // If answer is saved, immediately validate and show feedback
+                handleCheckAnswer({ target: slideElement.querySelector('.check-answer-btn') });
+            }
+            
+            // Add "Go to Practice Center" button on the last lesson slide
+            if (mode === 'lesson') {
+                const allLessonSlides = [...lessonData[dayKey].sections.hook, ...lessonData[dayKey].sections.i_do, ...lessonData[dayKey].sections.we_do, ...lessonData[dayKey].sections.you_do];
+                if (slideIndex === allLessonSlides.length - 1) {
+                    const btn = document.createElement('button');
+                    btn.textContent = 'Go to Practice Center! 🚀';
+                    btn.className = 'safari-btn text-2xl mt-8 mode-toggle-btn';
+                    btn.dataset.mode = 'practice';
+                    interactiveArea.appendChild(btn);
+                }
+            }
+            
+            updateNavButtons(mode, dayKey);
+            initDragAndDrop(slideElement);
+        };
+
+        /**
+         * Renders the correct interactive element based on question type.
+         * @param {HTMLElement} container - The element to render into.
+         * @param {object} question - The question object.
+         */
+        const renderInteractiveElement = (container, question) => {
+            switch (question.type) {
+                case 'mc':
+                case 'multi-select':
+                case 'true-false':
+                    const optionsContainer = document.createElement('div');
+                    optionsContainer.className = 'flex flex-wrap justify-center gap-4';
+                    question.data.options.forEach(option => {
+                        const button = document.createElement('button');
+                        button.className = 'safari-btn text-xl';
+                        button.textContent = option;
+                        button.dataset.option = option;
+                        optionsContainer.appendChild(button);
+                    });
+                    container.appendChild(optionsContainer);
+                    break;
+                case 'text-box':
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.maxLength = question.data.size;
+                    input.className = 'p-2 border-4 border-[#8B4513] rounded-lg text-2xl text-center w-full md:w-1/2';
+                    container.appendChild(input);
+                    break;
+                case 'drag-drop-match':
+                case 'drag-drop-sort':
+                     // Handled by initDragAndDrop after the main structure is rendered
+                    break;
+            }
+
+            if (question.type !== 'content' && question.type !== 'drag-drop-match' && question.type !== 'drag-drop-sort') {
+                 const checkButton = document.createElement('button');
+                 checkButton.textContent = 'Check Answer';
+                 checkButton.className = 'safari-btn check-answer-btn mt-6';
+                 container.appendChild(checkButton);
+            }
+        };
+        
+        /**
+         * Initializes drag and drop functionality for a given slide.
+         * @param {HTMLElement} slideElement - The root element of the current slide.
+         */
+        function initDragAndDrop(slideElement) {
+            const questionId = slideElement.dataset.id;
+            const mode = document.getElementById('lesson-view').classList.contains('hidden') ? 'practice' : 'lesson';
+            const dayKey = appState.activeDay;
+            
+            let question;
+            if (mode === 'lesson') {
+                const sections = lessonData[dayKey].sections;
+                const allSlides = [...sections.hook, ...sections.i_do, ...sections.we_do, ...sections.you_do];
+                question = allSlides.find(q => q.id === questionId);
+            } else {
+                question = lessonData[dayKey].practice_center[appState.practiceLevel].find(q => q.id === questionId);
+            }
+
+            if (!question || (question.type !== 'drag-drop-match' && question.type !== 'drag-drop-sort')) {
+                return;
+            }
+
+            const interactiveArea = slideElement.querySelector('.interactive-area');
+            interactiveArea.innerHTML = ''; // Clear previous content
+
+            if (question.type === 'drag-drop-match') {
+                const container = document.createElement('div');
+                container.className = 'flex flex-col md:flex-row items-center justify-center gap-8';
+                
+                const draggablesContainer = document.createElement('div');
+                draggablesContainer.className = 'flex flex-col gap-4';
+                question.data.draggables.forEach(item => {
+                    const el = document.createElement('div');
+                    el.className = 'safari-btn draggable text-xl p-4';
+                    el.textContent = item;
+                    el.draggable = true;
+                    el.dataset.value = item;
+                    draggablesContainer.appendChild(el);
+                });
+
+                const dropTargetsContainer = document.createElement('div');
+                dropTargetsContainer.className = 'flex flex-col gap-4';
+                question.data.dropTargets.forEach(target => {
+                    const targetEl = document.createElement('div');
+                    targetEl.className = 'flex items-center gap-4';
+                    targetEl.innerHTML = `<div class="drop-target w-48 h-16 rounded-lg flex items-center justify-center" data-target="${target}"></div><span class="text-xl font-bold">${target}</span>`;
+                    dropTargetsContainer.appendChild(targetEl);
+                });
+
+                container.appendChild(draggablesContainer);
+                container.appendChild(dropTargetsContainer);
+                interactiveArea.appendChild(container);
+            }
+
+            if (question.type === 'drag-drop-sort') {
+                const container = document.createElement('div');
+                container.className = 'flex flex-col items-center gap-4';
+
+                const itemsContainer = document.createElement('div');
+                itemsContainer.className = 'flex flex-wrap justify-center gap-4 p-4 bg-[#D2B48C] rounded-lg mb-4';
+                question.data.items.forEach(item => {
+                    const el = document.createElement('div');
+                    el.className = 'safari-btn draggable text-xl p-4';
+                    el.textContent = item;
+                    el.draggable = true;
+                    el.dataset.value = item;
+                    itemsContainer.appendChild(el);
+                });
+
+                const categoriesContainer = document.createElement('div');
+                categoriesContainer.className = 'flex flex-wrap justify-center gap-4';
+                question.data.categories.forEach(category => {
+                    const categoryEl = document.createElement('div');
+                    categoryEl.className = 'flex flex-col items-center gap-2 p-4 bg-[#F0EAD6] rounded-lg border-2 border-[#8B4513]';
+                    categoryEl.innerHTML = `<h3 class="text-xl font-bold">${category}</h3><div class="drop-target w-64 min-h-[80px] rounded-lg flex flex-col gap-2 p-2" data-target="${category}"></div>`;
+                    categoriesContainer.appendChild(categoryEl);
+                });
+
+                container.appendChild(itemsContainer);
+                container.appendChild(categoriesContainer);
+                interactiveArea.appendChild(container);
+            }
+            
+            const checkButton = document.createElement('button');
+            checkButton.textContent = 'Check Answer';
+            checkButton.className = 'safari-btn check-answer-btn mt-6';
+            interactiveArea.appendChild(checkButton);
+
+            let draggedItem = null;
+
+            slideElement.querySelectorAll('.draggable').forEach(item => {
+                item.addEventListener('dragstart', (e) => {
+                    draggedItem = e.target;
+                    setTimeout(() => e.target.classList.add('opacity-50'), 0);
+                });
+                item.addEventListener('dragend', (e) => {
+                    draggedItem = null;
+                    e.target.classList.remove('opacity-50');
+                });
+            });
+
+            slideElement.querySelectorAll('.drop-target').forEach(target => {
+                target.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    target.classList.add('over');
+                });
+                target.addEventListener('dragleave', () => {
+                    target.classList.remove('over');
+                });
+                target.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    target.classList.remove('over');
+                    if (draggedItem) {
+                        // If target is a match-type (only one item), swap content
+                        if (question.type === 'drag-drop-match' && target.children.length > 0) {
+                            const existingItem = target.firstElementChild;
+                            draggedItem.parentElement.appendChild(existingItem);
+                        }
+                        target.appendChild(draggedItem);
+                        saveProgress(question.id);
+                    }
+                });
+            });
+        }
+
+
+        /**
+         * Updates the state of the Previous/Next buttons.
+         * @param {string} mode - 'lesson' or 'practice'.
+         * @param {string} dayKey - The key for the day.
+         */
+        const updateNavButtons = (mode, dayKey) => {
+            const progress = appState.progress[dayKey][mode];
+            const prevBtn = document.getElementById(`${mode}-prev-btn`);
+            const nextBtn = document.getElementById(`${mode}-next-btn`);
+            
+            let totalSlides;
+            if (mode === 'lesson') {
+                const sections = lessonData[dayKey].sections;
+                totalSlides = [...sections.hook, ...sections.i_do, ...sections.we_do, ...sections.you_do].length;
+            } else {
+                totalSlides = lessonData[dayKey].practice_center[appState.practiceLevel].length;
+            }
+
+            prevBtn.disabled = progress.slideIndex === 0;
+            nextBtn.disabled = progress.slideIndex === totalSlides - 1;
+            prevBtn.style.opacity = prevBtn.disabled ? 0.5 : 1;
+            nextBtn.style.opacity = nextBtn.disabled ? 0.5 : 1;
+        };
+        
+        // --- EVENT HANDLERS ---
+
+        /**
+         * Sets up all major event listeners for the application.
+         */
+        const setupEventListeners = () => {
+            const mainTabs = document.getElementById('main-tabs');
+            const contentArea = document.getElementById('content-area');
+            const downloadWorkBtn = document.getElementById('download-work-btn');
+            const downloadPdfBtn = document.getElementById('download-pdf-btn');
+
+            mainTabs.addEventListener('click', handleTabClick);
+            contentArea.addEventListener('click', handleContentClick);
+            downloadWorkBtn.addEventListener('click', downloadWork);
+            downloadPdfBtn.addEventListener('click', downloadPDF);
+        };
+        
+        /**
+         * Handles clicks within the main content area, delegating to other functions.
+         * @param {Event} e - The click event.
+         */
+        const handleContentClick = (e) => {
+            const target = e.target;
+            
+            // Mode toggle
+            if (target.matches('.mode-toggle-btn')) {
+                appState.currentMode = target.dataset.mode;
+                appState.correctStreak = 0; // Reset streak on mode change
+                renderDay(appState.activeDay);
+                saveProgress();
+            }
+            
+            // Level select
+            if (target.matches('#level-select')) {
+                appState.practiceLevel = target.value;
+                appState.progress[appState.activeDay].practice.slideIndex = 0; // Reset to first question
+                appState.correctStreak = 0;
+                renderPracticeView(appState.activeDay);
+                saveProgress();
+            }
+
+            // Slide Navigation
+            if (target.matches('#lesson-prev-btn, #lesson-next-btn, #practice-prev-btn, #practice-next-btn')) {
+                handleSlideNav(target.id);
+            }
+            
+            // Answer selection (MC, True/False)
+            if (target.matches('.interactive-area .safari-btn') && target.dataset.option) {
+                handleOptionSelect(target);
+            }
+
+            // Check Answer
+            if (target.matches('.check-answer-btn')) {
+                handleCheckAnswer(e);
+            }
+        };
+
+        /**
+         * Handles main tab navigation.
+         * @param {Event} e - The click event.
+         */
+        const handleTabClick = (e) => {
+            const dayKey = e.target.dataset.day;
+            if (dayKey) {
+                appState.activeDay = dayKey;
+                appState.currentMode = 'lesson'; // Always start on lesson view for a new day
+                appState.correctStreak = 0;
+                renderTabs();
+                renderDay(dayKey);
+                saveProgress();
+            }
+        };
+
+        /**
+         * Handles previous/next slide navigation.
+         * @param {string} buttonId - The ID of the clicked button.
+         */
+        const handleSlideNav = (buttonId) => {
+            const [mode, direction] = buttonId.split('-');
+            const progress = appState.progress[appState.activeDay][mode];
+            
+            if (direction === 'next') progress.slideIndex++;
+            if (direction === 'prev') progress.slideIndex--;
+
+            renderSlide(mode, appState.activeDay, progress.slideIndex);
+            
+            if(mode === 'lesson') {
+                const allSlides = [...lessonData[appState.activeDay].sections.hook, ...lessonData[appState.activeDay].sections.i_do, ...lessonData[appState.activeDay].sections.we_do, ...lessonData[appState.activeDay].sections.you_do];
+                const progressBar = document.querySelector('#lesson-progress-bar div');
+                if(progressBar) progressBar.style.width = `${((progress.slideIndex + 1) / allSlides.length) * 100}%`;
+            }
+            
+            saveProgress();
+        };
+
+        /**
+         * Handles selection of multiple choice or true/false options.
+         * @param {HTMLElement} selectedButton - The button that was clicked.
+         */
+        const handleOptionSelect = (selectedButton) => {
+            const slide = selectedButton.closest('.slide');
+            const questionId = slide.dataset.id;
+            const mode = document.getElementById('lesson-view').classList.contains('hidden') ? 'practice' : 'lesson';
+
+            let question;
+             if (mode === 'lesson') {
+                const sections = lessonData[appState.activeDay].sections;
+                const allSlides = [...sections.hook, ...sections.i_do, ...sections.we_do, ...sections.you_do];
+                question = allSlides.find(q => q.id === questionId);
+            } else {
+                question = lessonData[appState.activeDay].practice_center[appState.practiceLevel].find(q => q.id === questionId);
+            }
+
+            if (question.type === 'multi-select') {
+                selectedButton.classList.toggle('bg-yellow-400');
+            } else {
+                slide.querySelectorAll('[data-option]').forEach(btn => btn.classList.remove('bg-yellow-400'));
+                selectedButton.classList.add('bg-yellow-400');
+            }
+            saveProgress(questionId);
+        };
+        
+        /**
+         * Handles the "Check Answer" button click.
+         * @param {Event} e - The click event.
+         */
+        const handleCheckAnswer = (e) => {
+            const button = e.target;
+            const slide = button.closest('.slide');
+            if (!slide) return;
+
+            const questionId = slide.dataset.id;
+            const mode = document.getElementById('lesson-view').classList.contains('hidden') ? 'practice' : 'lesson';
+            
+            let question;
+             if (mode === 'lesson') {
+                const sections = lessonData[appState.activeDay].sections;
+                const allSlides = [...sections.hook, ...sections.i_do, ...sections.we_do, ...sections.you_do];
+                question = allSlides.find(q => q.id === questionId);
+            } else {
+                question = lessonData[appState.activeDay].practice_center[appState.practiceLevel].find(q => q.id === questionId);
+            }
+
+            let userAnswer;
+            let isCorrect = false;
+
+            switch (question.type) {
+                case 'mc':
+                case 'true-false':
+                    const selected = slide.querySelector('.bg-yellow-400');
+                    userAnswer = selected ? selected.dataset.option : null;
+                    isCorrect = userAnswer === question.correct;
+                    break;
+                case 'multi-select':
+                    const selectedNodes = slide.querySelectorAll('.bg-yellow-400');
+                    userAnswer = Array.from(selectedNodes).map(n => n.dataset.option);
+                    isCorrect = question.correct.length === userAnswer.length && question.correct.every(val => userAnswer.includes(val));
+                    break;
+                case 'text-box':
+                    const input = slide.querySelector('input[type="text"]');
+                    userAnswer = input.value.trim();
+                    // For answers that vary, accept any non-empty input as correct for simplicity
+                    if (question.correct === "Answers will vary") {
+                        isCorrect = userAnswer !== "";
+                    } else {
+                        isCorrect = userAnswer.toLowerCase() === question.correct.toLowerCase();
+                    }
+                    break;
+                case 'drag-drop-match':
+                    const matchTargets = slide.querySelectorAll('.drop-target');
+                    userAnswer = {};
+                    let allMatched = true;
+                    matchTargets.forEach(target => {
+                        const dropped = target.querySelector('.draggable');
+                        if (dropped) {
+                            userAnswer[dropped.dataset.value] = target.dataset.target;
+                        } else {
+                            allMatched = false;
+                        }
+                    });
+                    isCorrect = allMatched && JSON.stringify(userAnswer) === JSON.stringify(question.correct);
+                    break;
+                case 'drag-drop-sort':
+                    const sortTargets = slide.querySelectorAll('.drop-target');
+                    userAnswer = {};
+                    question.data.categories.forEach(cat => userAnswer[cat] = []);
+                    
+                    sortTargets.forEach(target => {
+                        const category = target.dataset.target;
+                        target.querySelectorAll('.draggable').forEach(item => {
+                            userAnswer[category].push(item.dataset.value);
+                        });
+                    });
+                    
+                    // Sort arrays for comparison
+                    Object.keys(userAnswer).forEach(key => userAnswer[key].sort());
+                    Object.keys(question.correct).forEach(key => question.correct[key].sort());
+                    isCorrect = JSON.stringify(userAnswer) === JSON.stringify(question.correct);
+                    break;
+            }
+
+            displayFeedback(slide, isCorrect, mode);
+            
+            // Disable interactions after checking
+            const interactiveElements = slide.querySelectorAll('.interactive-area button, .interactive-area input, .draggable');
+            interactiveElements.forEach(el => el.disabled = true);
+            slide.querySelectorAll('.draggable').forEach(el => el.draggable = false);
+            button.style.display = 'none'; // Hide check button
+        };
+
+        /**
+         * Displays feedback to the user.
+         * @param {HTMLElement} slide - The current slide element.
+         * @param {boolean} isCorrect - Whether the answer was correct.
+         * @param {string} mode - 'lesson' or 'practice'.
+         */
+        const displayFeedback = (slide, isCorrect, mode) => {
+            const feedbackArea = slide.querySelector('.feedback-area');
+            const feedbackDiv = document.createElement('div');
+            feedbackDiv.className = `feedback ${isCorrect ? 'correct' : 'incorrect'}`;
+
+            if (isCorrect) {
+                const randomMsg = POSITIVE_FEEDBACK[Math.floor(Math.random() * POSITIVE_FEEDBACK.length)];
+                feedbackDiv.textContent = `🎉 ${randomMsg}`;
+                if (mode === 'practice') {
+                    appState.correctStreak++;
+                }
+            } else {
+                feedbackDiv.textContent = '🤔 Not quite, explorer. Look closely and count again!';
+                 if (mode === 'practice') {
+                    appState.correctStreak = 0;
+                }
+            }
+            feedbackArea.innerHTML = '';
+            feedbackArea.appendChild(feedbackDiv);
+            
+            // Update streak counter if visible
+            const streakCounter = document.getElementById('streak-counter');
+            if (streakCounter) {
+                streakCounter.textContent = `⭐ Streak: ${appState.correctStreak}`;
+            }
+        };
+
+        // --- DATA PERSISTENCE ---
+
+        /**
+         * Saves the current application state to localStorage.
+         * @param {string} [questionId=null] - The ID of the question to save the answer for.
+         */
+        const saveProgress = (questionId = null) => {
+            if (questionId) {
+                const slide = document.querySelector(`[data-id="${questionId}"]`);
+                if (!slide) return;
+                
+                const mode = document.getElementById('lesson-view').classList.contains('hidden') ? 'practice' : 'lesson';
+                const dayKey = appState.activeDay;
+
+                let question;
+                if (mode === 'lesson') {
+                    const sections = lessonData[dayKey].sections;
+                    const allSlides = [...sections.hook, ...sections.i_do, ...sections.we_do, ...sections.you_do];
+                    question = allSlides.find(q => q.id === questionId);
+                } else {
+                    question = lessonData[dayKey].practice_center[appState.practiceLevel].find(q => q.id === questionId);
+                }
+
+                let answer;
+                switch (question.type) {
+                    case 'mc':
+                    case 'true-false':
+                        const selected = slide.querySelector('.bg-yellow-400');
+                        answer = selected ? selected.dataset.option : null;
+                        break;
+                    case 'multi-select':
+                        const selectedNodes = slide.querySelectorAll('.bg-yellow-400');
+                        answer = Array.from(selectedNodes).map(n => n.dataset.option);
+                        break;
+                    case 'text-box':
+                        answer = slide.querySelector('input').value;
+                        break;
+                    case 'drag-drop-match':
+                    case 'drag-drop-sort':
+                        answer = {};
+                        slide.querySelectorAll('.drop-target').forEach(target => {
+                            const targetKey = target.dataset.target;
+                            const droppedItems = Array.from(target.querySelectorAll('.draggable')).map(d => d.dataset.value);
+                            answer[targetKey] = droppedItems;
+                        });
+                        break;
+                }
+                appState.progress[dayKey][mode].answers[questionId] = answer;
+            }
+            
+            localStorage.setItem('safariCountProgress', JSON.stringify(appState));
+        };
+
+        /**
+         * Loads progress from either the embedded script tag or localStorage.
+         */
+        const loadProgress = () => {
+            const progressDataScript = document.getElementById('progress-data');
+            let loadedState = null;
+
+            if (progressDataScript && progressDataScript.textContent.trim().length > 2) {
+                try {
+                    loadedState = JSON.parse(progressDataScript.textContent);
+                } catch (e) {
+                    console.error("Failed to parse embedded progress data.", e);
+                }
+            } else {
+                const savedState = localStorage.getItem('safariCountProgress');
+                if (savedState) {
+                    try {
+                        loadedState = JSON.parse(savedState);
+                    } catch (e) {
+                        console.error("Failed to parse localStorage progress data.", e);
+                    }
+                }
+            }
+
+            if (loadedState) {
+                appState = loadedState;
+            }
+        };
+
+        /**
+         * Restores a saved answer to the interactive element.
+         * @param {HTMLElement} slide - The current slide element.
+         * @param {string} type - The question type.
+         * @param {*} answer - The saved answer data.
+         */
+        const restoreAnswer = (slide, type, answer) => {
+            switch (type) {
+                case 'mc':
+                case 'true-false':
+                    if (answer) {
+                        const btn = slide.querySelector(`[data-option="${answer}"]`);
+                        if (btn) btn.classList.add('bg-yellow-400');
+                    }
+                    break;
+                case 'multi-select':
+                    if (Array.isArray(answer)) {
+                        answer.forEach(opt => {
+                            const btn = slide.querySelector(`[data-option="${opt}"]`);
+                            if (btn) btn.classList.add('bg-yellow-400');
+                        });
+                    }
+                    break;
+                case 'text-box':
+                    slide.querySelector('input').value = answer || '';
+                    break;
+                case 'drag-drop-match':
+                case 'drag-drop-sort':
+                    const draggables = Array.from(slide.querySelectorAll('.draggable'));
+                    Object.keys(answer).forEach(targetKey => {
+                        const targetEl = slide.querySelector(`[data-target="${targetKey}"]`);
+                        if (targetEl) {
+                            answer[targetKey].forEach(itemValue => {
+                                const itemToMove = draggables.find(d => d.dataset.value === itemValue);
+                                if (itemToMove) targetEl.appendChild(itemToMove);
+                            });
+                        }
+                    });
+                    break;
+            }
+        };
+
+        /**
+         * Creates a fully interactive HTML file with the user's progress saved.
+         */
+        const downloadWork = () => {
+            saveProgress(); // Ensure latest state is captured
+            const currentHtml = document.documentElement.outerHTML;
+            
+            // Inject the current state into the script tag of the new file content
+            const progressJsonString = JSON.stringify(appState);
+            const updatedHtml = currentHtml.replace(
+                /<script id="progress-data" type="application\/json">.*?<\/script>/,
+                `<script id="progress-data" type="application/json">${progressJsonString}<\/script>`
+            );
+
+            const blob = new Blob([updatedHtml], { type: 'text/html' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'safari-count-progress.html';
+            a.click();
+            URL.revokeObjectURL(a.href);
+        };
+        
+        /**
+         * Generates and downloads a PDF of the student's work.
+         */
+        const downloadPDF = async () => {
+            const { jsPDF } = window.jspdf;
+            const contentArea = document.getElementById('content-area');
+            const originalScrollTop = contentArea.scrollTop;
+            contentArea.scrollTop = 0; // Scroll to top for capture
+
+            // Create an off-screen clone for print-friendly rendering
+            const clone = document.createElement('div');
+            clone.style.position = 'absolute';
+            clone.style.left = '-9999px';
+            clone.style.width = '1200px'; // A fixed width for consistent layout
+            document.body.appendChild(clone);
+
+            // Iterate through all days and slides to build the PDF content
+            for (const dayKey in lessonData) {
+                const dayData = lessonData[dayKey];
+                
+                // Add Day Title
+                const dayTitle = document.createElement('h1');
+                dayTitle.className = 'text-3xl font-bold p-4 bg-yellow-200 text-center';
+                dayTitle.textContent = `Day ${dayKey.replace('day', '')}: ${dayData.title}`;
+                clone.appendChild(dayTitle);
+
+                const allSlides = [
+                    ...dayData.sections.hook, ...dayData.sections.i_do, 
+                    ...dayData.sections.we_do, ...dayData.sections.you_do,
+                    ...dayData.practice_center.level1,
+                    ...dayData.practice_center.level2,
+                    ...dayData.practice_center.level3
+                ];
+
+                for (const slideData of allSlides) {
+                    const savedAnswer = appState.progress[dayKey]?.lesson?.answers[slideData.id] || appState.progress[dayKey]?.practice?.answers[slideData.id];
+                    if (!savedAnswer) continue; // Only include answered questions
+
+                    const slideContainer = document.createElement('div');
+                    slideContainer.className = 'p-4 border-b-2 border-gray-300';
+                    
+                    const prompt = document.createElement('p');
+                    prompt.className = 'text-lg font-bold mb-2';
+                    prompt.textContent = slideData.prompt;
+                    slideContainer.appendChild(prompt);
+                    
+                    const visual = generateVisual(slideData.visual);
+                    if (visual) {
+                        visual.setAttribute('width', '300');
+                        visual.setAttribute('height', '150');
+                        slideContainer.appendChild(visual);
+                    }
+
+                    const answerEl = document.createElement('div');
+                    answerEl.className = 'mt-2 text-blue-700';
+                    answerEl.innerHTML = `<strong>Answer:</strong> ${formatAnswerForPDF(slideData, savedAnswer)}`;
+                    slideContainer.appendChild(answerEl);
+
+                    clone.appendChild(slideContainer);
+                }
+            }
+
+            // Use html2canvas to capture the clone
+            const canvas = await html2canvas(clone, { scale: 2 });
+            const imgData = canvas.toDataURL('image/png');
+            
+            // Clean up the clone
+            document.body.removeChild(clone);
+            contentArea.scrollTop = originalScrollTop;
+
+            // Use jspdf to create the PDF
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'px',
+                format: 'a4'
+            });
+
+            const imgProps = pdf.getImageProperties(imgData);
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+            
+            let heightLeft = imgHeight;
+            let position = 0;
+
+            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+            heightLeft -= pdfHeight;
+
+            while (heightLeft > 0) {
+                position = heightLeft - imgHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+                heightLeft -= pdfHeight;
+            }
+
+            pdf.save('safari-count-work.pdf');
+        };
+
+        function formatAnswerForPDF(question, answer) {
+            if (!answer) return '<i>Not answered</i>';
+            switch (question.type) {
+                case 'mc':
+                case 'true-false':
+                case 'text-box':
+                    return answer;
+                case 'multi-select':
+                    return answer.join(', ');
+                case 'drag-drop-match':
+                    return Object.entries(answer).map(([key, val]) => `${key} ➔ ${val[0]}`).join('<br>');
+                case 'drag-drop-sort':
+                    return Object.entries(answer).map(([key, val]) => `<b>${key}:</b> ${val.join(', ')}`).join('<br>');
+                default:
+                    return JSON.stringify(answer);
+            }
+        }
+
+        // --- START THE APP ---
+        init();
+    });
+    </script>
+</body>
+</html>
