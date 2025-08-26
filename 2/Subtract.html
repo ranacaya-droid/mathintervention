@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Subtraction: Counting Back</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        /* Custom Space Theme Styles */
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background-color: #0c0a1f; /* Deep space blue */
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+        .space-btn {
+            background-color: #2a2a55;
+            border: 3px solid #7f7fbf;
+            color: #e0e0ff;
+            font-weight: bold;
+            padding: 10px 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px #4c4c8d, 0 6px 8px rgba(0,0,0,0.5), inset 0 2px 0 rgba(255,255,255,0.2);
+            transition: all 0.1s ease-in-out;
+            cursor: pointer;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.7);
+        }
+        .space-btn:hover {
+            transform: translateY(1px);
+            box-shadow: 0 3px #4c4c8d, 0 5px 6px rgba(0,0,0,0.5), inset 0 2px 0 rgba(255,255,255,0.2);
+        }
+        .space-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px #4c4c8d, 0 2px 3px rgba(0,0,0,0.5), inset 0 2px 0 rgba(255,255,255,0.2);
+        }
+        .tab-btn {
+            background-color: #1d1d3d;
+            color: #a8a8d8;
+            padding: 12px 24px;
+            border-radius: 15px 15px 0 0;
+            font-size: 1.25rem;
+            border: 3px solid #4c4c8d;
+            border-bottom: none;
+            transition: all 0.3s;
+            position: relative;
+            bottom: -3px;
+        }
+        .tab-btn.active {
+            background-color: #3e3e7e;
+            color: white;
+            border-color: #7f7fbf;
+        }
+        .slide {
+            background: rgba(12, 10, 31, 0.8);
+            border: 3px solid #7f7fbf;
+            border-radius: 20px;
+            padding: 2rem;
+            min-height: 500px;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 0 20px rgba(127, 127, 191, 0.5);
+        }
+        .draggable {
+            cursor: grab;
+            user-select: none;
+        }
+        .drop-target {
+            border: 3px dashed #7f7fbf;
+            min-height: 80px;
+            transition: background-color 0.3s;
+            background: rgba(255,255,255,0.05);
+        }
+        .drop-target.over {
+            background-color: rgba(127, 255, 127, 0.3);
+        }
+        .feedback {
+            font-size: 1.5rem;
+            font-weight: bold;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-top: 1rem;
+            text-align: center;
+        }
+        .feedback.correct {
+            background-color: #1a4d2e;
+            color: #9dffce;
+            border: 2px solid #3d8b5a;
+        }
+        .feedback.incorrect {
+            background-color: #6b211e;
+            color: #ffb8b5;
+            border: 2px solid #b84a4a;
+        }
+    </style>
+</head>
+<body class="text-gray-200 p-4 md:p-8">
+
+    <div id="app" class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row justify-between items-center mb-4 text-center md:text-left">
+            <h1 class="text-4xl md:text-5xl font-bold text-cyan-300 mb-4 md:mb-0" style="text-shadow: 0 0 10px #00ffff;">🚀 Space Subtraction 🪐</h1>
+            <div class="flex space-x-2">
+                <button id="download-work-btn" class="space-btn">Download Work</button>
+                <button id="download-pdf-btn" class="space-btn">Download PDF</button>
+            </div>
+        </header>
+
+        <!-- Main Navigation Tabs -->
+        <nav id="main-tabs" class="flex justify-center space-x-2 z-10 relative">
+            <!-- Tabs will be generated here -->
+        </nav>
+
+        <!-- Content Area -->
+        <main id="content-area" class="bg-[#3e3e7e] p-4 md:p-6 rounded-2xl rounded-tl-none shadow-lg border-4 border-[#7f7fbf]">
+            <!-- Day content will be injected here -->
+        </main>
+    </div>
+
+    <!-- Hidden data script for saving progress -->
+    <script id="progress-data" type="application/json"></script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- DATA ---
+        const lessonData = {
+          "day1": {
+            "title": "Countdown Launch: Subtracting 1",
+            "standard": "2.PAFR.1.5 - Add and subtract number combinations flexibly and accurately within 20.",
+            "sections": {
+              "hook": [
+                { "id": "d1_hook_1", "type": "content", "prompt": "Welcome, Space Cadets! To launch our rocket, we need a countdown. A countdown is like subtracting. Let's practice counting back by one!" }
+              ],
+              "i_do": [
+                { "id": "d1_ido_1", "type": "mc", "prompt": "Solve the countdown: 17 - 1 = ?", "visual": "number_line: {start:0, end:20, start_point:17, jumps:[{dir:'back', size:1}]}", "data": { "options": ["15", "16", "18"] }, "correct": "16" },
+                { "id": "d1_ido_2", "type": "text-box", "prompt": "The rocket is at 12. It moves back 1 space. Where is it now?", "visual": "number_line: {start:0, end:20, start_point:12, jumps:[{dir:'back', size:1}]}", "data": { "size": 2 }, "correct": "11" },
+                { "id": "d1_ido_3", "type": "true-false", "prompt": "Does 19 - 1 = 18?", "visual": "equation_card: {text:'19 - 1 = 18'}", "data": { "options": ["True", "False"] }, "correct": "True" }
+              ],
+              "we_do": [
+                { "id": "d1_wedo_1", "type": "mc", "prompt": "Let's solve together: 14 - 1 = ?", "visual": "number_line: {start:0, end:20, start_point:14, jumps:[{dir:'back', size:1}]}", "data": { "options": ["13", "15", "12"] }, "correct": "13" },
+                { "id": "d1_wedo_2", "type": "mc", "prompt": "What is one less than 20?", "visual": "number_line: {start:0, end:20, start_point:20, jumps:[{dir:'back', size:1}]}", "data": { "options": ["18", "19", "21"] }, "correct": "19" },
+                { "id": "d1_wedo_3", "type": "true-false", "prompt": "Is this correct? 11 - 1 = 12", "visual": "equation_card: {text:'11 - 1 = 12'}", "data": { "options": ["True", "False"] }, "correct": "False" },
+                { "id": "d1_wedo_4", "type": "text-box", "prompt": "Type the answer: 18 - 1 = ?", "visual": "", "data": { "size": 2 }, "correct": "17" },
+                { "id": "d1_wedo_5", "type": "drag-drop-match", "prompt": "Drag the answer to the problem.", "visual": "equation_card: {text:'16 - 1 = ?'}", "data": { "draggables": ["15", "17"], "dropTargets": ["Answer Box"] }, "correct": { "15": "Answer Box" } },
+                { "id": "d1_wedo_6", "type": "mc", "prompt": "Find the number that is 1 less than 10.", "visual": "", "data": { "options": ["8", "9", "11"] }, "correct": "9" },
+                { "id": "d1_wedo_7", "type": "true-false", "prompt": "A countdown from 9 goes to 8. True or False?", "visual": "", "data": { "options": ["True", "False"] }, "correct": "True" },
+                { "id": "d1_wedo_8", "type": "text-box", "prompt": "Solve: 13 - 1", "visual": "number_line: {start:0, end:20, start_point:13, jumps:[{dir:'back', size:1}]}", "data": { "size": 2 }, "correct": "12" },
+                { "id": "d1_wedo_9", "type": "mc", "prompt": "Which equation means 'one less than fifteen'?", "visual": "", "data": { "options": ["15 + 1", "15 - 1", "16 - 1"] }, "correct": "15 - 1" },
+                { "id": "d1_wedo_10", "type": "drag-drop-match", "prompt": "Match the rocket to its landing spot after moving back 1.", "visual": "number_line: {start:0, end:20, elements:[{type:'rocket', position:15}]}", "data": { "draggables": ["Rocket"], "dropTargets": ["14", "16"] }, "correct": { "Rocket": "14" } }
+              ],
+              "you_do": [
+                { "id": "d1_youdo_1", "type": "mc", "prompt": "Solve: 19 - 1 = ?", "visual": "", "data": { "options": ["18", "20", "17"] }, "correct": "18" },
+                { "id": "d1_youdo_2", "type": "text-box", "prompt": "What is 1 less than 17?", "visual": "", "data": { "size": 2 }, "correct": "16" },
+                { "id": "d1_youdo_3", "type": "true-false", "prompt": "14 - 1 = 15. Is that right?", "visual": "", "data": { "options": ["True", "False"] }, "correct": "False" },
+                { "id": "d1_youdo_4", "type": "mc", "prompt": "A rocket counts down from 11. What is the next number?", "visual": "", "data": { "options": ["12", "10", "9"] }, "correct": "10" },
+                { "id": "d1_youdo_5", "type": "drag-drop-match", "prompt": "Drag the correct answer to the equation: 12 - 1 = ?", "visual": "", "data": { "draggables": ["11", "13"], "dropTargets": ["Equation"] }, "correct": { "11": "Equation" } }
+              ]
+            },
+            "practice_center": {
+              "level1": [
+                { "id": "d1_l1_q1", "type": "mc", "prompt": "15 - 1 = ?", "visual": "number_line: {start:0, end:20, start_point:15, jumps:[{dir:'back', size:1}]}", "data": { "options": ["13", "14", "16"] }, "correct": "14" },
+                { "id": "d1_l1_q2", "type": "mc", "prompt": "18 - 1 = ?", "visual": "", "data": { "options": ["17", "19", "16"] }, "correct": "17" },
+                { "id": "d1_l1_q3", "type": "mc", "prompt": "What is 1 less than 11?", "visual": "", "data": { "options": ["12", "10", "9"] }, "correct": "10" },
+                { "id": "d1_l1_q4", "type": "mc", "prompt": "Solve: 10 - 1", "visual": "number_line: {start:0, end:20, start_point:10, jumps:[{dir:'back', size:1}]}", "data": { "options": ["8", "9", "11"] }, "correct": "9" },
+                { "id": "d1_l1_q5", "type": "mc", "prompt": "20 - 1 = ?", "visual": "", "data": { "options": ["18", "19", "21"] }, "correct": "19" },
+                { "id": "d1_l1_q6", "type": "mc", "prompt": "Find the answer to 13 - 1.", "visual": "", "data": { "options": ["12", "13", "14"] }, "correct": "12" },
+                { "id": "d1_l1_q7", "type": "mc", "prompt": "What number comes before 17?", "visual": "", "data": { "options": ["15", "16", "18"] }, "correct": "16" },
+                { "id": "d1_l1_q8", "type": "mc", "prompt": "9 - 1 = ?", "visual": "", "data": { "options": ["7", "8", "10"] }, "correct": "8" },
+                { "id": "d1_l1_q9", "type": "mc", "prompt": "What is 14 take away 1?", "visual": "", "data": { "options": ["12", "13", "15"] }, "correct": "13" },
+                { "id": "d1_l1_q10", "type": "mc", "prompt": "Solve: 12 - 1", "visual": "number_line: {start:0, end:20, start_point:12, jumps:[{dir:'back', size:1}]}", "data": { "options": ["10", "11", "13"] }, "correct": "11" },
+                { "id": "d1_l1_q11", "type": "true-false", "prompt": "16 - 1 = 15", "visual": "", "data": { "options": ["True", "False"] }, "correct": "True" },
+                { "id": "d1_l1_q12", "type": "true-false", "prompt": "19 - 1 = 20", "visual": "", "data": { "options": ["True", "False"] }, "correct": "False" },
+                { "id": "d1_l1_q13", "type": "true-false", "prompt": "One less than 13 is 12.", "visual": "", "data": { "options": ["True", "False"] }, "correct": "True" },
+                { "id": "d1_l1_q14", "type": "true-false", "prompt": "10 - 1 = 11", "visual": "", "data": { "options": ["True", "False"] }, "correct": "False" },
+                { "id": "d1_l1_q15", "type": "true-false", "prompt": "The number before 18 is 17.", "visual": "", "data": { "options": ["True", "False"] }, "correct": "True" },
+                { "id": "d1_l1_q16", "type": "drag-drop-match", "prompt": "Match the problem to its answer.", "visual": "", "data": { "draggables": ["14 - 1", "17 - 1"], "dropTargets": ["16", "13"] }, "correct": { "14 - 1": "13", "17 - 1": "16" } },
+                { "id": "d1_l1_q17", "type": "drag-drop-match", "prompt": "Match the problem to its answer.", "visual": "", "data": { "draggables": ["11 - 1", "19 - 1"], "dropTargets": ["18", "10"] }, "correct": { "11 - 1": "10", "19 - 1": "18" } },
+                { "id": "d1_l1_q18", "type": "drag-drop-match", "prompt": "Drag the answer to the equation.", "visual": "equation_card: {text:'15 - 1 = ?'}", "data": { "draggables": ["14", "16"], "dropTargets": ["Equation"] }, "correct": { "14": "Equation" } },
+                { "id": "d1_l1_q19", "type": "drag-drop-match", "prompt": "Drag the answer to the equation.", "visual": "equation_card: {text:'12 - 1 = ?'}", "data": { "draggables": ["11", "13"], "dropTargets": ["Equation"] }, "correct": { "11": "Equation" } },
+                { "id": "d1_l1_q20", "type": "drag-drop-match", "prompt": "Match the number line to the correct answer.", "visual": "number_line: {start:0, end:20, start_point:16, jumps:[{dir:'back', size:1}]}", "data": { "draggables": ["Number Line"], "dropTargets": ["15", "17"] }, "correct": { "Number Line": "15" } }
+              ],
+              "level2": [
+                { "id": "d1_l2_q1", "type": "mc", "prompt": "There are 15 stars. An alien zaps 1. How many are left?", "visual": "group: {type:'star', count:14}", "data": { "options": ["13", "14", "16"] }, "correct": "14" },
+                { "id": "d1_l2_q2", "type": "mc", "prompt": "Which equation matches the number line?", "visual": "number_line: {start:10, end:20, start_point:18, jumps:[{dir:'back', size:1}]}", "data": { "options": ["18 - 1 = 17", "17 - 1 = 16", "18 + 1 = 19"] }, "correct": "18 - 1 = 17" },
+                { "id": "d1_l2_q3", "type": "mc", "prompt": "Start at 20. Count back 1. Where are you?", "visual": "", "data": { "options": ["18", "19", "21"] }, "correct": "19" },
+                { "id": "d1_l2_q4", "type": "mc", "prompt": "Find the missing number: ? - 1 = 13", "visual": "", "data": { "options": ["12", "14", "15"] }, "correct": "14" },
+                { "id": "d1_l2_q5", "type": "mc", "prompt": "Which problem has an answer of 16?", "visual": "", "data": { "options": ["15 - 1", "18 - 1", "17 - 1"] }, "correct": "17 - 1" },
+                { "id": "d1_l2_q6", "type": "multi-select", "prompt": "Select all equations that are true.", "visual": "", "data": { "options": ["14 - 1 = 13", "11 - 1 = 12", "20 - 1 = 19", "9 - 1 = 10"] }, "correct": ["14 - 1 = 13", "20 - 1 = 19"] },
+                { "id": "d1_l2_q7", "type": "multi-select", "prompt": "Which of these are the same as 15 - 1?", "visual": "", "data": { "options": ["14", "1 more than 13", "1 less than 16", "13"] }, "correct": ["14", "1 more than 13"] },
+                { "id": "d1_l2_q8", "type": "multi-select", "prompt": "A rocket is at 18. It needs to move to 17. What can it do?", "visual": "", "data": { "options": ["Add 1", "Subtract 1", "Count back 1", "Stay still"] }, "correct": ["Subtract 1", "Count back 1"] },
+                { "id": "d1_l2_q9", "type": "multi-select", "prompt": "Select all the problems with an answer of 11.", "visual": "", "data": { "options": ["10 - 1", "12 - 1", "13 - 1", "11 - 0"] }, "correct": ["12 - 1", "11 - 0"] },
+                { "id": "d1_l2_q10", "type": "multi-select", "prompt": "Which numbers are 1 less than a teen number (13-19)?", "visual": "", "data": { "options": ["12", "15", "19", "11"] }, "correct": ["12", "15"] },
+                { "id": "d1_l2_q11", "type": "text-box", "prompt": "There were 13 aliens. 1 flew away. How many are left?", "visual": "", "data": { "size": 2 }, "correct": "12" },
+                { "id": "d1_l2_q12", "type": "text-box", "prompt": "What number is missing? 18, 17, __, 15", "visual": "", "data": { "size": 2 }, "correct": "16" },
+                { "id": "d1_l2_q13", "type": "text-box", "prompt": "Solve: 11 - 1 = ?", "visual": "", "data": { "size": 2 }, "correct": "10" },
+                { "id": "d1_l2_q14", "type": "text-box", "prompt": "I am a number. If you subtract 1 from me, you get 19. What number am I?", "visual": "", "data": { "size": 2 }, "correct": "20" },
+                { "id": "d1_l2_q15", "type": "text-box", "prompt": "Start at 16. Make 1 jump back. Where do you land?", "visual": "number_line: {start:0, end:20, start_point:16}", "data": { "size": 2 }, "correct": "15" },
+                { "id": "d1_l2_q16", "type": "drag-drop-sort", "prompt": "Sort the equations by their answer.", "visual": "", "data": { "items": ["18 - 1", "15 - 1", "17 - 0", "13 + 1"], "categories": ["Answer is 17", "Answer is 14"] }, "correct": { "Answer is 17": ["18 - 1", "17 - 0"], "Answer is 14": ["15 - 1", "13 + 1"] } },
+                { "id": "d1_l2_q17", "type": "drag-drop-sort", "prompt": "Sort the numbers.", "visual": "", "data": { "items": ["19", "11", "14", "12"], "categories": ["1 less than a number", "Not 1 less than a number"] }, "correct": { "1 less than a number": [], "Not 1 less than a number": ["19", "11", "14", "12"] } },
+                { "id": "d1_l2_q18", "type": "drag-drop-sort", "prompt": "Put the problems in order from smallest answer to largest answer.", "visual": "", "data": { "items": ["19 - 1", "12 - 1", "16 - 1"], "categories": ["Smallest Answer", "Middle Answer", "Largest Answer"] }, "correct": { "Smallest Answer": ["12 - 1"], "Middle Answer": ["16 - 1"], "Largest Answer": ["19 - 1"] } },
+                { "id": "d1_l2_q19", "type": "drag-drop-sort", "prompt": "Sort the equations into True and False.", "visual": "", "data": { "items": ["15 - 1 = 14", "18 - 1 = 19", "11 - 1 = 10"], "categories": ["True", "False"] }, "correct": { "True": ["15 - 1 = 14", "11 - 1 = 10"], "False": ["18 - 1 = 19"] } },
+                { "id": "d1_l2_q20", "type": "drag-drop-sort", "prompt": "Sort the answers.", "visual": "", "data": { "items": ["11", "18", "15", "12"], "categories": ["Answer to a 'minus 1' problem", "Not an answer"] }, "correct": { "Answer to a 'minus 1' problem": ["11", "18", "15", "12"], "Not an answer": [] } }
+              ],
+              "level3": [
+                { "id": "d1_l3_q1", "type": "mc", "prompt": "A rocket has 18 fuel cells. It uses 1 fuel cell for launch. Then it uses another fuel cell to leave orbit. How many are left?", "visual": "", "data": { "options": ["17", "16", "15"] }, "correct": "16" },
+                { "id": "d1_l3_q2", "type": "mc", "prompt": "Which number line shows the solution to 15 - 1 - 1?", "visual": "", "data": { "options": ["Starts at 15, ends at 13", "Starts at 15, ends at 14", "Starts at 15, ends at 16"] }, "correct": "Starts at 15, ends at 13" },
+                { "id": "d1_l3_q3", "type": "mc", "prompt": "If N - 1 = 11, what is N?", "visual": "", "data": { "options": ["10", "11", "12"] }, "correct": "12" },
+                { "id": "d1_l3_q4", "type": "mc", "prompt": "I am thinking of a number. It is 1 less than 20. It is not 18. What is it?", "visual": "", "data": { "options": ["17", "19", "21"] }, "correct": "19" },
+                { "id": "d1_l3_q5", "type": "mc", "prompt": "Which has the same answer as 14 - 1?", "visual": "", "data": { "options": ["15 - 1", "12 + 1", "16 - 2"] }, "correct": "12 + 1" },
+                { "id": "d1_l3_q6", "type": "text-box", "prompt": "Start at 20. Count back 1. Then count back 1 again. Where do you land?", "visual": "", "data": { "size": 2 }, "correct": "18" },
+                { "id": "d1_l3_q7", "type": "text-box", "prompt": "There are 12 astronauts. One is on a spacewalk. How many are in the ship?", "visual": "", "data": { "size": 2 }, "correct": "11" },
+                { "id": "d1_l3_q8", "type": "text-box", "prompt": "Write an equation that means 'one less than sixteen'.", "visual": "", "data": { "size": 10 }, "correct": "16 - 1 = 15" },
+                { "id": "d1_l3_q9", "type": "text-box", "prompt": "The temperature on a planet was 18 degrees. It dropped by 1 degree. What is the new temperature?", "visual": "", "data": { "size": 2 }, "correct": "17" },
+                { "id": "d1_l3_q10", "type": "text-box", "prompt": "Fill in the pattern: 14, 13, 12, __", "visual": "", "data": { "size": 2 }, "correct": "11" },
+                { "id": "d1_l3_q11", "type": "drag-drop-match", "prompt": "Match the description to the equation.", "visual": "", "data": { "draggables": ["One less than twenty", "The number before fifteen"], "dropTargets": ["15 - 1 = 14", "20 - 1 = 19"] }, "correct": { "One less than twenty": "20 - 1 = 19", "The number before fifteen": "15 - 1 = 14" } },
+                { "id": "d1_l3_q12", "type": "drag-drop-sort", "prompt": "Put the equations in order, from the one with the largest answer to the one with the smallest answer.", "visual": "", "data": { "items": ["18 - 1", "13 - 1", "20 - 1"], "categories": ["Largest Answer", "Middle Answer", "Smallest Answer"] }, "correct": { "Largest Answer": ["20 - 1"], "Middle Answer": ["18 - 1"], "Smallest Answer": ["13 - 1"] } },
+                { "id": "d1_l3_q13", "type": "drag-drop-match", "prompt": "Match the word problem to the answer.", "visual": "", "data": { "draggables": ["14 aliens, 1 flies away", "19 stars, 1 vanishes"], "dropTargets": ["18", "13"] }, "correct": { "14 aliens, 1 flies away": "13", "19 stars, 1 vanishes": "18" } },
+                { "id": "d1_l3_q14", "type": "drag-drop-sort", "prompt": "Create a true equation.", "visual": "", "data": { "items": ["16", "1", "15", "="], "categories": ["First Number", "Sign", "Second Number", "Equals", "Answer"] }, "correct": { "First Number": ["16"], "Sign": ["-"], "Second Number": ["1"], "Equals": ["="], "Answer": ["15"] } },
+                { "id": "d1_l3_q15", "type": "drag-drop-match", "prompt": "Match the number to its 'minus 1' partner.", "visual": "", "data": { "draggables": ["20", "15"], "dropTargets": ["14", "19"] }, "correct": { "20": "19", "15": "14" } },
+                { "id": "d1_l3_q16", "type": "mc", "prompt": "Part A: Solve 18 - 1. Part B: Is the answer an even or odd number?", "visual": "", "data": { "options": ["17, Odd", "17, Even", "19, Odd"] }, "correct": "17, Odd" },
+                { "id": "d1_l3_q17", "type": "mc", "prompt": "Part A: What is 1 less than 15? Part B: What is 1 less than that number?", "visual": "", "data": { "options": ["14, 13", "14, 12", "16, 15"] }, "correct": "14, 13" },
+                { "id": "d1_l3_q18", "type": "mc", "prompt": "Part A: Which number is missing: 12, 11, __, 9? Part B: What is 1 less than the missing number?", "visual": "", "data": { "options": ["10, 9", "10, 8", "13, 12"] }, "correct": "10, 9" },
+                { "id": "d1_l3_q19", "type": "mc", "prompt": "Part A: A rocket is at 13. It moves back 1. Where is it? Part B: It moves back 1 again. Where is it now?", "visual": "", "data": { "options": ["12, 11", "12, 13", "14, 13"] }, "correct": "12, 11" },
+                { "id": "d1_l3_q20", "type": "mc", "prompt": "Part A: Solve 11 - 1. Part B: Is the answer a single-digit number?", "visual": "", "data": { "options": ["10, No", "10, Yes", "12, No"] }, "correct": "10, No" }
+              ]
+            }
+          },
+          "day2": {
+            "title": "Asteroid Hop: Subtracting 2",
+            "standard": "2.PAFR.1.5 - Add and subtract number combinations flexibly and accurately within 20.",
+            "sections": {
+              "hook": [
+                { "id": "d2_hook_1", "type": "content", "prompt": "Cadets, our rocket is in an asteroid field! We need to make quick hops to dodge them. Let's practice hopping back TWO spaces at a time!" }
+              ],
+              "i_do": [
+                { "id": "d2_ido_1", "type": "mc", "prompt": "Solve the asteroid dodge: 18 - 2 = ?", "visual": "number_line: {start:0, end:20, start_point:18, jumps:[{dir:'back', size:1}, {dir:'back', size:1}]}", "data": { "options": ["17", "16", "20"] }, "correct": "16" },
+                { "id": "d2_ido_2", "type": "text-box", "prompt": "The rocket is at 15. It hops back 2 spaces. Where is it now?", "visual": "number_line: {start:0, end:20, start_point:15, jumps:[{dir:'back', size:1}, {dir:'back', size:1}]}", "data": { "size": 2 }, "correct": "13" },
+                { "id": "d2_ido_3", "type": "true-false", "prompt": "Does 20 - 2 = 18?", "visual": "equation_card: {text:'20 - 2 = 18'}", "data": { "options": ["True", "False"] }, "correct": "True" }
+              ],
+              "we_do": [
+                { "id": "d2_wedo_1", "type": "mc", "prompt": "Let's solve together: 16 - 2 = ?", "visual": "number_line: {start:0, end:20, start_point:16, jumps:[{dir:'back', size:1}, {dir:'back', size:1}]}", "data": { "options": ["14", "15", "18"] }, "correct": "14" },
+                { "id": "d2_wedo_2", "type": "mc", "prompt": "What is two less than 19?", "visual": "number_line: {start:0, end:20, start_point:19, jumps:[{dir:'back', size:1}, {dir:'back', size:1}]}", "data": { "options": ["17", "18", "21"] }, "correct": "17" },
+                { "id": "d2_wedo_3", "type": "true-false", "prompt": "Is this correct? 12 - 2 = 11", "visual": "equation_card: {text:'12 - 2 = 11'}", "data": { "options": ["True", "False"] }, "correct": "False" },
+                { "id": "d2_wedo_4", "type": "text-box", "prompt": "Type the answer: 17 - 2 = ?", "visual": "", "data": { "size": 2 }, "correct": "15" },
+                { "id": "d2_wedo_5", "type": "drag-drop-match", "prompt": "Drag the answer to the problem.", "visual": "equation_card: {text:'14 - 2 = ?'}", "data": { "draggables": ["12", "13"], "dropTargets": ["Answer Box"] }, "correct": { "12": "Answer Box" } },
+                { "id": "d2_wedo_6", "type": "mc", "prompt": "Find the number that is 2 less than 11.", "visual": "", "data": { "options": ["8", "9", "10"] }, "correct": "9" },
+                { "id": "d2_wedo_7", "type": "true-false", "prompt": "Counting back two from 10 gets you to 8. True or False?", "visual": "", "data": { "options": ["True", "False"] }, "correct": "True" },
+                { "id": "d2_wedo_8", "type": "text-box", "prompt": "Solve: 13 - 2", "visual": "number_line: {start:0, end:20, start_point:13, jumps:[{dir:'back', size:1}, {dir:'back', size:1}]}", "data": { "size": 2 }, "correct": "11" },
+                { "id": "d2_wedo_9", "type": "mc", "prompt": "Which equation means 'two less than sixteen'?", "visual": "", "data": { "options": ["16 + 2", "16 - 2", "18 - 2"] }, "correct": "16 - 2" },
+                { "id": "d2_wedo_10", "type": "drag-drop-match", "prompt": "Match the rocket to its landing spot after moving back 2.", "visual": "number_line: {start:0, end:20, elements:[{type:'rocket', position:17}]}", "data": { "draggables": ["Rocket"], "dropTargets": ["15", "16"] }, "correct": { "Rocket": "15" } }
+              ],
+              "you_do": [
+                { "id": "d2_youdo_1", "type": "mc", "prompt": "Solve: 20 - 2 = ?", "visual": "", "data": { "options": ["18", "19", "17"] }, "correct": "18" },
+                { "id": "d2_youdo_2", "type": "text-box", "prompt": "What is 2 less than 15?", "visual": "", "data": { "size": 2 }, "correct": "13" },
+                { "id": "d2_youdo_3", "type": "true-false", "prompt": "13 - 2 = 10. Is that right?", "visual": "", "data": { "options": ["True", "False"] }, "correct": "False" },
+                { "id": "d2_youdo_4", "type": "mc", "prompt": "A rocket hops back two spaces from 11. Where does it land?", "visual": "", "data": { "options": ["13", "10", "9"] }, "correct": "9" },
+                { "id": "d2_youdo_5", "type": "drag-drop-match", "prompt": "Drag the correct answer to the equation: 10 - 2 = ?", "visual": "", "data": { "draggables": ["8", "9"], "dropTargets": ["Equation"] }, "correct": { "8": "Equation" } }
+              ]
+            },
+            "practice_center": {
+              "level1": [
+                { "id": "d2_l1_q1", "type": "mc", "prompt": "17 - 2 = ?", "visual": "number_line: {start:0, end:20, start_point:17, jumps:[{dir:'back', size:1}, {dir:'back', size:1}]}", "data": { "options": ["15", "16", "19"] }, "correct": "15" },
+                { "id": "d2_l1_q2", "type": "mc", "prompt": "19 - 2 = ?", "visual": "", "data": { "options": ["17", "18", "21"] }, "correct": "17" },
+                { "id": "d2_l1_q3", "type": "mc", "prompt": "What is 2 less than 12?", "visual": "", "data": { "options": ["14", "11", "10"] }, "correct": "10" },
+                { "id": "d2_l1_q4", "type": "mc", "prompt": "Solve: 11 - 2", "visual": "number_line: {start:0, end:20, start_point:11, jumps:[{dir:'back', size:1}, {dir:'back', size:1}]}", "data": { "options": ["9", "10", "13"] }, "correct": "9" },
+                { "id": "d2_l1_q5", "type": "mc", "prompt": "20 - 2 = ?", "visual": "", "data": { "options": ["18", "19", "17"] }, "correct": "18" },
+                { "id": "d2_l1_q6", "type": "mc", "prompt": "Find the answer to 14 - 2.", "visual": "", "data": { "options": ["11", "12", "16"] }, "correct": "12" },
+                { "id": "d2_l1_q7", "type": "mc", "prompt": "What number is 2 before 16?", "visual": "", "data": { "options": ["14", "15", "18"] }, "correct": "14" },
+                { "id": "d2_l1_q8", "type": "mc", "prompt": "10 - 2 = ?", "visual": "", "data": { "options": ["7", "8", "9"] }, "correct": "8" },
+                { "id": "d2_l1_q9", "type": "mc", "prompt": "What is 15 take away 2?", "visual": "", "data": { "options": ["12", "13", "17"] }, "correct": "13" },
+                { "id": "d2_l1_q10", "type": "mc", "prompt": "Solve: 13 - 2", "visual": "number_line: {start:0, end:20, start_point:13, jumps:[{dir:'back', size:1}, {dir:'back', size:1}]}", "data": { "options": ["10", "11", "12"] }, "correct": "11" },
+                { "id": "d2_l1_q11", "type": "true-false", "prompt": "18 - 2 = 16", "visual": "", "data": { "options": ["True", "False"] }, "correct": "True" },
+                { "id": "d2_l1_q12", "type": "true-false", "prompt": "20 - 2 = 19", "visual": "", "data": { "options": ["True", "False"] }, "correct": "False" },
+                { "id": "d2_l1_q13", "type": "true-false", "prompt": "Two less than 14 is 12.", "visual": "", "data": { "options": ["True", "False"] }, "correct": "True" },
+                { "id": "d2_l1_q14", "type": "true-false", "prompt": "11 - 2 = 10", "visual": "", "data": { "options": ["True", "False"] }, "correct": "False" },
+                { "id": "d2_l1_q15", "type": "true-false", "prompt": "Counting back two from 15 lands on 13.", "visual": "", "data": { "options": ["True", "False"] }, "correct": "True" },
+                { "id": "d2_l1_q16", "type": "drag-drop-match", "prompt": "Match the problem to its answer.", "visual": "", "data": { "draggables": ["15 - 2", "18 - 2"], "dropTargets": ["16", "13"] }, "correct": { "15 - 2": "13", "18 - 2": "16" } },
+                { "id": "d2_l1_q17", "type": "drag-drop-match", "prompt": "Match the problem to its answer.", "visual": "", "data": { "draggables": ["12 - 2", "20 - 2"], "dropTargets": ["18", "10"] }, "correct": { "12 - 2": "10", "20 - 2": "18" } },
+                { "id": "d2_l1_q18", "type": "drag-drop-match", "prompt": "Drag the answer to the equation.", "visual": "equation_card: {text:'16 - 2 = ?'}", "data": { "draggables": ["14", "15"], "dropTargets": ["Equation"] }, "correct": { "14": "Equation" } },
+                { "id": "d2_l1_q19", "type": "drag-drop-match", "prompt": "Drag the answer to the equation.", "visual": "equation_card: {text:'13 - 2 = ?'}", "data": { "draggables": ["11", "12"], "dropTargets": ["Equation"] }, "correct": { "11": "Equation" } },
+                { "id": "d2_l1_q20", "type": "drag-drop-match", "prompt": "Match the number line to the correct answer.", "visual": "number_line: {start:0, end:20, start_point:19, jumps:[{dir:'back', size:1}, {dir:'back', size:1}]}", "data": { "draggables": ["Number Line"], "dropTargets": ["17", "18"] }, "correct": { "Number Line": "17" } }
+              ],
+              "level2": [
+                { "id": "d2_l2_q1", "type": "mc", "prompt": "There are 18 planets. A black hole swallows 2. How many are left?", "visual": "group: {type:'planet', count:16}", "data": { "options": ["16", "17", "20"] }, "correct": "16" },
+                { "id": "d2_l2_q2", "type": "mc", "prompt": "Which equation matches the number line?", "visual": "number_line: {start:10, end:20, start_point:16, jumps:[{dir:'back', size:1}, {dir:'back', size:1}]}", "data": { "options": ["16 - 2 = 14", "15 - 2 = 13", "16 - 1 = 15"] }, "correct": "16 - 2 = 14" },
+                { "id": "d2_l2_q3", "type": "mc", "prompt": "Start at 19. Count back 2. Where are you?", "visual": "", "data": { "options": ["17", "18", "21"] }, "correct": "17" },
+                { "id": "d2_l2_q4", "type": "mc", "prompt": "Find the missing number: ? - 2 = 11", "visual": "", "data": { "options": ["13", "12", "10"] }, "correct": "13" },
+                { "id": "d2_l2_q5", "type": "mc", "prompt": "Which problem has an answer of 15?", "visual": "", "data": { "options": ["16 - 2", "17 - 2", "18 - 2"] }, "correct": "17 - 2" },
+                { "id": "d2_l2_q6", "type": "multi-select", "prompt": "Select all equations that are true.", "visual": "", "data": { "options": ["15 - 2 = 13", "12 - 2 = 11", "20 - 2 = 18", "10 - 2 = 7"] }, "correct": ["15 - 2 = 13", "20 - 2 = 18"] },
+                { "id": "d2_l2_q7", "type": "multi-select", "prompt": "Which of these are the same as 16 - 2?", "visual": "", "data": { "options": ["14", "15 - 1", "1 less than 15", "13"] }, "correct": ["14", "15 - 1", "1 less than 15"] },
+                { "id": "d2_l2_q8", "type": "multi-select", "prompt": "A rocket is at 20. It needs to move to 18. What can it do?", "visual": "", "data": { "options": ["Subtract 1", "Subtract 2", "Count back 2", "Add 2"] }, "correct": ["Subtract 2", "Count back 2"] },
+                { "id": "d2_l2_q9", "type": "multi-select", "prompt": "Select all the problems with an answer of 10.", "visual": "", "data": { "options": ["11 - 1", "12 - 2", "13 - 3", "10 - 0"] }, "correct": ["11 - 1", "12 - 2", "10 - 0"] },
+                { "id": "d2_l2_q10", "type": "multi-select", "prompt": "Which numbers are 2 less than a teen number (13-19)?", "visual": "", "data": { "options": ["11", "15", "17", "10"] }, "correct": ["11", "15", "17"] },
+                { "id": "d2_l2_q11", "type": "text-box", "prompt": "There were 14 aliens. 2 flew away. How many are left?", "visual": "", "data": { "size": 2 }, "correct": "12" },
+                { "id": "d2_l2_q12", "type": "text-box", "prompt": "What number is missing? 19, 18, __, 16", "visual": "", "data": { "size": 2 }, "correct": "17" },
+                { "id": "d2_l2_q13", "type": "text-box", "prompt": "Solve: 11 - 2 = ?", "visual": "", "data": { "size": 2 }, "correct": "9" },
+                { "id": "d2_l2_q14", "type": "text-box", "prompt": "I am a number. If you subtract 2 from me, you get 17. What number am I?", "visual": "", "data": { "size": 2 }, "correct": "19" },
+                { "id": "d2_l2_q15", "type": "text-box", "prompt": "Start at 15. Make 2 jumps back. Where do you land?", "visual": "number_line: {start:0, end:20, start_point:15}", "data": { "size": 2 }, "correct": "13" },
+                { "id": "d2_l2_q16", "type": "drag-drop-sort", "prompt": "Sort the equations by their answer.", "visual": "", "data": { "items": ["19 - 2", "16 - 2", "18 - 1", "15 - 1"], "categories": ["Answer is 17", "Answer is 14"] }, "correct": { "Answer is 17": ["19 - 2", "18 - 1"], "Answer is 14": ["16 - 2", "15 - 1"] } },
+                { "id": "d2_l2_q17", "type": "drag-drop-sort", "prompt": "Sort the numbers.", "visual": "", "data": { "items": ["18", "11", "14", "12"], "categories": ["Answer to a 'minus 2' problem", "Not an answer"] }, "correct": { "Answer to a 'minus 2' problem": ["18", "11", "14", "12"], "Not an answer": [] } },
+                { "id": "d2_l2_q18", "type": "drag-drop-sort", "prompt": "Put the problems in order from smallest answer to largest answer.", "visual": "", "data": { "items": ["18 - 2", "11 - 2", "15 - 2"], "categories": ["Smallest Answer", "Middle Answer", "Largest Answer"] }, "correct": { "Smallest Answer": ["11 - 2"], "Middle Answer": ["15 - 2"], "Largest Answer": ["18 - 2"] } },
+                { "id": "d2_l2_q19", "type": "drag-drop-sort", "prompt": "Sort the equations into True and False.", "visual": "", "data": { "items": ["16 - 2 = 14", "19 - 2 = 18", "12 - 2 = 10"], "categories": ["True", "False"] }, "correct": { "True": ["16 - 2 = 14", "12 - 2 = 10"], "False": ["19 - 2 = 18"] } },
+                { "id": "d2_l2_q20", "type": "drag-drop-sort", "prompt": "Sort the numbers.", "visual": "", "data": { "items": ["10", "17", "15", "13"], "categories": ["Even Answer", "Odd Answer"] }, "correct": { "Even Answer": ["10"], "Odd Answer": ["17", "15", "13"] } }
+              ],
+              "level3": [
+                { "id": "d2_l3_q1", "type": "mc", "prompt": "A rocket had 20 fuel cells. It used 1 to launch and 1 to dodge an asteroid. How many are left?", "visual": "", "data": { "options": ["19", "18", "17"] }, "correct": "18" },
+                { "id": "d2_l3_q2", "type": "mc", "prompt": "Which number line shows the solution to 16 - 1 - 1?", "visual": "", "data": { "options": ["Starts at 16, ends at 14", "Starts at 16, ends at 15", "Starts at 16, ends at 18"] }, "correct": "Starts at 16, ends at 14" },
+                { "id": "d2_l3_q3", "type": "mc", "prompt": "If N - 2 = 15, what is N?", "visual": "", "data": { "options": ["13", "16", "17"] }, "correct": "17" },
+                { "id": "d2_l3_q4", "type": "mc", "prompt": "I am thinking of a number. It is 2 less than 19. It is not 18. What is it?", "visual": "", "data": { "options": ["17", "16", "21"] }, "correct": "17" },
+                { "id": "d2_l3_q5", "type": "mc", "prompt": "Which has the same answer as 15 - 2?", "visual": "", "data": { "options": ["14 - 1", "12 + 1", "16 - 3"] }, "correct": "12 + 1" },
+                { "id": "d2_l3_q6", "type": "text-box", "prompt": "Start at 19. Count back 2. Then count back 1. Where do you land?", "visual": "", "data": { "size": 2 }, "correct": "16" },
+                { "id": "d2_l3_q7", "type": "text-box", "prompt": "There are 13 astronauts. Two are on a spacewalk. How many are in the ship?", "visual": "", "data": { "size": 2 }, "correct": "11" },
+                { "id": "d2_l3_q8", "type": "text-box", "prompt": "Write an equation that means 'two less than fifteen'.", "visual": "", "data": { "size": 10 }, "correct": "15 - 2 = 13" },
+                { "id": "d2_l3_q9", "type": "text-box", "prompt": "The temperature was 17 degrees. It dropped by 2 degrees. What is the new temperature?", "visual": "", "data": { "size": 2 }, "correct": "15" },
+                { "id": "d2_l3_q10", "type": "text-box", "prompt": "Fill in the pattern: 20, 18, 16, __", "visual": "", "data": { "size": 2 }, "correct": "14" },
+                { "id": "d2_l3_q11", "type": "drag-drop-match", "prompt": "Match the description to the equation.", "visual": "", "data": { "draggables": ["Two less than nineteen", "The number 2 before fourteen"], "dropTargets": ["14 - 2 = 12", "19 - 2 = 17"] }, "correct": { "Two less than nineteen": "19 - 2 = 17", "The number 2 before fourteen": "14 - 2 = 12" } },
+                { "id": "d2_l3_q12", "type": "drag-drop-sort", "prompt": "Put the equations in order, from the one with the largest answer to the one with the smallest answer.", "visual": "", "data": { "items": ["17 - 2", "12 - 2", "19 - 2"], "categories": ["Largest Answer", "Middle Answer", "Smallest Answer"] }, "correct": { "Largest Answer": ["19 - 2"], "Middle Answer": ["17 - 2"], "Smallest Answer": ["12 - 2"] } },
+                { "id": "d2_l3_q13", "type": "drag-drop-match", "prompt": "Match the word problem to the answer.", "visual": "", "data": { "draggables": ["15 aliens, 2 fly away", "18 stars, 2 vanish"], "dropTargets": ["16", "13"] }, "correct": { "15 aliens, 2 fly away": "13", "18 stars, 2 vanish": "16" } },
+                { "id": "d2_l3_q14", "type": "drag-drop-sort", "prompt": "Create a true equation.", "visual": "", "data": { "items": ["17", "2", "15", "="], "categories": ["First Number", "Sign", "Second Number", "Equals", "Answer"] }, "correct": { "First Number": ["17"], "Sign": ["-"], "Second Number": ["2"], "Equals": ["="], "Answer": ["15"] } },
+                { "id": "d2_l3_q15", "type": "drag-drop-match", "prompt": "Match the number to its 'minus 2' partner.", "visual": "", "data": { "draggables": ["19", "14"], "dropTargets": ["12", "17"] }, "correct": { "19": "17", "14": "12" } },
+                { "id": "d2_l3_q16", "type": "mc", "prompt": "Part A: Solve 19 - 2. Part B: Is the answer an even or odd number?", "visual": "", "data": { "options": ["17, Odd", "17, Even", "16, Even"] }, "correct": "17, Odd" },
+                { "id": "d2_l3_q17", "type": "mc", "prompt": "Part A: What is 2 less than 16? Part B: What is 1 less than that number?", "visual": "", "data": { "options": ["14, 13", "14, 12", "13, 12"] }, "correct": "14, 13" },
+                { "id": "d2_l3_q18", "type": "mc", "prompt": "Part A: Which number is missing: 15, 13, __, 9? Part B: What is 2 less than the missing number?", "visual": "", "data": { "options": ["11, 9", "11, 10", "12, 10"] }, "correct": "11, 9" },
+                { "id": "d2_l3_q19", "type": "mc", "prompt": "Part A: A rocket is at 14. It moves back 2. Where is it? Part B: It moves back 2 again. Where is it now?", "visual": "", "data": { "options": ["12, 10", "12, 11", "16, 14"] }, "correct": "12, 10" },
+                { "id": "d2_l3_q20", "type": "mc", "prompt": "Part A: Solve 12 - 2. Part B: Is the answer a single-digit number?", "visual": "", "data": { "options": ["10, No", "10, Yes", "9, Yes"] }, "correct": "10, No" }
+              ]
+            }
+          },
+          "day3": {
+            "title": "Planet Leap: Subtracting 3",
+            "standard": "2.PAFR.1.5 - Add and subtract number combinations flexibly and accurately within 20.",
+            "sections": {
+              "hook": [
+                { "id": "d3_hook_1", "type": "content", "prompt": "Cadets, we need to make a big leap to a new planet system! This means counting back THREE spaces. Let's use our fingers to help us track three jumps." }
+              ],
+              "i_do": [
+                { "id": "d3_ido_1", "type": "mc", "prompt": "Solve the planet leap: 19 - 3 = ?", "visual": "number_line: {start:0, end:20, start_point:19, jumps:[{dir:'back', size:1}, {dir:'back', size:1}, {dir:'back', size:1}]}", "data": { "options": ["17", "16", "15"] }, "correct": "16" },
+                { "id": "d3_ido_2", "type": "text-box", "prompt": "The rocket is at 16. It leaps back 3 spaces. Where is it now?", "visual": "number_line: {start:0, end:20, start_point:16, jumps:[{dir:'back', size:1}, {dir:'back', size:1}, {dir:'back', size:1}]}", "data": { "size": 2 }, "correct": "13" },
+                { "id": "d3_ido_3", "type": "true-false", "prompt": "Does 15 - 3 = 12?", "visual": "equation_card: {text:'15 - 3 = 12'}", "data": { "options": ["True", "False"] }, "correct": "True" }
+              ],
+              "we_do": [
+                { "id": "d3_wedo_1", "type": "mc", "prompt": "Let's solve together: 17 - 3 = ?", "visual": "number_line: {start:0, end:20, start_point:17, jumps:[{dir:'back', size:1}, {dir:'back', size:1}, {dir:'back', size:1}]}", "data": { "options": ["14", "15", "13"] }, "correct": "14" },
+                { "id": "d3_wedo_2", "type": "mc", "prompt": "What is three less than 20?", "visual": "number_line: {start:0, end:20, start_point:20, jumps:[{dir:'back', size:1}, {dir:'back', size:1}, {dir:'back', size:1}]}", "data": { "options": ["17", "18", "16"] }, "correct": "17" },
+                { "id": "d3_wedo_3", "type": "true-false", "prompt": "Is this correct? 13 - 3 = 11", "visual": "equation_card: {text:'13 - 3 = 11'}", "data": { "options": ["True", "False"] }, "correct": "False" },
+                { "id": "d3_wedo_4", "type": "text-box", "prompt": "Type the answer: 18 - 3 = ?", "visual": "", "data": { "size": 2 }, "correct": "15" },
+                { "id": "d3_wedo_5", "type": "drag-drop-match", "prompt": "Drag the answer to the problem.", "visual": "equation_card: {text:'14 - 3 = ?'}", "data": { "draggables": ["11", "12"], "dropTargets": ["Answer Box"] }, "correct": { "11": "Answer Box" } },
+                { "id": "d3_wedo_6", "type": "mc", "prompt": "Find the number that is 3 less than 12.", "visual": "", "data": { "options": ["8", "9", "10"] }, "correct": "9" },
+                { "id": "d3_wedo_7", "type": "true-false", "prompt": "Counting back three from 11 gets you to 8. True or False?", "visual": "", "data": { "options": ["True", "False"] }, "correct": "True" },
+                { "id": "d3_wedo_8", "type": "text-box", "prompt": "Solve: 16 - 3", "visual": "number_line: {start:0, end:20, start_point:16, jumps:[{dir:'back', size:1}, {dir:'back', size:1}, {dir:'back', size:1}]}", "data": { "size": 2 }, "correct": "13" },
+                { "id": "d3_wedo_9", "type": "mc", "prompt": "Which equation means 'three less than seventeen'?", "visual": "", "data": { "options": ["17 + 3", "17 - 3", "20 - 3"] }, "correct": "17 - 3" },
+                { "id": "d3_wedo_10", "type": "drag-drop-match", "prompt": "Match the rocket to its landing spot after moving back 3.", "visual": "number_line: {start:0, end:20, elements:[{type:'rocket', position:18}]}", "data": { "draggables": ["Rocket"], "dropTargets": ["15", "16"] }, "correct": { "Rocket": "15" } }
+              ],
+              "you_do": [
+                { "id": "d3_youdo_1", "type": "mc", "prompt": "Solve: 20 - 3 = ?", "visual": "", "data": { "options": ["18", "17", "16"] }, "correct": "17" },
+                { "id": "d3_youdo_2", "type": "text-box", "prompt": "What is 3 less than 15?", "visual": "", "data": { "size": 2 }, "correct": "12" },
+                { "id": "d3_youdo_3", "type": "true-false", "prompt": "14 - 3 = 10. Is that right?", "visual": "", "data": { "options": ["True", "False"] }, "correct": "False" },
+                { "id": "d3_youdo_4", "type": "mc", "prompt": "A rocket leaps back three spaces from 12. Where does it land?", "visual": "", "data": { "options": ["10", "9", "8"] }, "correct": "9" },
+                { "id": "d3_youdo_5", "type": "drag-drop-match", "prompt": "Drag the correct answer to the equation: 11 - 3 = ?", "visual": "", "data": { "draggables": ["8", "9"], "dropTargets": ["Equation"] }, "correct": { "8": "Equation" } }
+              ]
+            },
+            "practice_center": {
+              "level1": [
+                { "id": "d3_l1_q1", "type": "mc", "prompt": "18 - 3 = ?", "visual": "number_line: {start:0, end:20, start_point:18, jumps:[{dir:'back', size:1}, {dir:'back', size:1}, {dir:'back', size:1}]}", "data": { "options": ["15", "16", "17"] }, "correct": "15" },
+                { "id": "d3_l1_q2", "type": "mc", "prompt": "20 - 3 = ?", "visual": "", "data": { "options": ["17", "18", "16"] }, "correct": "17" },
+                { "id": "d3_l1_q3", "type": "mc", "prompt": "What is 3 less than 14?", "visual": "", "data": { "options": ["11", "12", "13"] }, "correct": "11" },
+                { "id": "d3_l1_q4", "type": "mc", "prompt": "Solve: 12 - 3", "visual": "number_line: {start:0, end:20, start_point:12, jumps:[{dir:'back', size:1}, {dir:'back', size:1}, {dir:'back', size:1}]}", "data": { "options": ["8", "9", "10"] }, "correct": "9" },
+                { "id": "d3_l1_q5", "type": "mc", "prompt": "15 - 3 = ?", "visual": "", "data": { "options": ["11", "12", "13"] }, "correct": "12" },
+                { "id": "d3_l1_q6", "type": "mc", "prompt": "Find the answer to 16 - 3.", "visual": "", "data": { "options": ["12", "13", "14"] }, "correct": "13" },
+                { "id": "d3_l1_q7", "type": "mc", "prompt": "What number is 3 before 19?", "visual": "", "data": { "options": ["16", "17", "18"] }, "correct": "16" },
+                { "id": "d3_l1_q8", "type": "mc", "prompt": "11 - 3 = ?", "visual": "", "data": { "options": ["7", "8", "9"] }, "correct": "8" },
+                { "id": "d3_l1_q9", "type": "mc", "prompt": "What is 17 take away 3?", "visual": "", "data": { "options": ["13", "14", "15"] }, "correct": "14" },
+                { "id": "d3_l1_q10", "type": "mc", "prompt": "Solve: 13 - 3", "visual": "number_line: {start:0, end:20, start_point:13, jumps:[{dir:'back', size:1}, {dir:'back', size:1}, {dir:'back', size:1}]}", "data": { "options": ["10", "11", "12"] }, "correct": "10" },
+                { "id": "d3_l1_q11", "type": "true-false", "prompt": "19 - 3 = 16", "visual": "", "data": { "options": ["True", "False"] }, "correct": "True" },
+                { "id": "d3_l1_q12", "type": "true-false", "prompt": "20 - 3 = 18", "visual": "", "data": { "options": ["True", "False"] }, "correct": "False" },
+                { "id": "d3_l1_q13", "type": "true-false", "prompt": "Three less than 15 is 12.", "visual": "", "data": { "options": ["True", "False"] }, "correct": "True" },
+                { "id": "d3_l1_q14", "type": "true-false", "prompt": "12 - 3 = 10", "visual": "", "data": { "options": ["True", "False"] }, "correct": "False" },
+                { "id": "d3_l1_q15", "type": "true-false", "prompt": "Counting back three from 17 lands on 14.", "visual": "", "data": { "options": ["True", "False"] }, "correct": "True" },
+                { "id": "d3_l1_q16", "type": "drag-drop-match", "prompt": "Match the problem to its answer.", "visual": "", "data": { "draggables": ["16 - 3", "19 - 3"], "dropTargets": ["16", "13"] }, "correct": { "16 - 3": "13", "19 - 3": "16" } },
+                { "id": "d3_l1_q17", "type": "drag-drop-match", "prompt": "Match the problem to its answer.", "visual": "", "data": { "draggables": ["13 - 3", "20 - 3"], "dropTargets": ["17", "10"] }, "correct": { "13 - 3": "10", "20 - 3": "17" } },
+                { "id": "d3_l1_q18", "type": "drag-drop-match", "prompt": "Drag the answer to the equation.", "visual": "equation_card: {text:'17 - 3 = ?'}", "data": { "draggables": ["14", "15"], "dropTargets": ["Equation"] }, "correct": { "14": "Equation" } },
+                { "id": "d3_l1_q19", "type": "drag-drop-match", "prompt": "Drag the answer to the equation.", "visual": "equation_card: {text:'14 - 3 = ?'}", "data": { "draggables": ["11", "12"], "dropTargets": ["Equation"] }, "correct": { "11": "Equation" } },
+                { "id": "d3_l1_q20", "type": "drag-drop-match", "prompt": "Match the number line to the correct answer.", "visual": "number_line: {start:0, end:20, start_point:18, jumps:[{dir:'back', size:1}, {dir:'back', size:1}, {dir:'back', size:1}]}", "data": { "draggables": ["Number Line"], "dropTargets": ["15", "16"] }, "correct": { "Number Line": "15" } }
+              ],
+              "level2": [],
+              "level3": []
+            }
+          },
+          "day4": {
+            "title": "Mission Control: Mixed Subtraction Practice",
+            "standard": "2.PAFR.1.5 - Add and subtract number combinations flexibly and accurately within 20.",
+            "sections": {
+              "hook": [
+                { "id": "d4_hook_1", "type": "content", "prompt": "Time for a fluency warm-up, Cadets! Let's solve these addition and subtraction problems within 5 as fast as we can!" },
+                { "id": "d4_hook_2", "type": "mc", "prompt": "Quick! 4 + 1 = ?", "visual": "", "data": { "options": ["3", "5", "6"] }, "correct": "5" },
+                { "id": "d4_hook_3", "type": "mc", "prompt": "Quick! 5 - 2 = ?", "visual": "", "data": { "options": ["2", "3", "4"] }, "correct": "3" }
+              ],
+              "i_do": [
+                { "id": "d4_ido_1", "type": "mc", "prompt": "Mission: 17 - 2. How many jumps back?", "visual": "equation_card: {text:'17 - 2'}", "data": { "options": ["1 jump", "2 jumps", "3 jumps"] }, "correct": "2 jumps" },
+                { "id": "d4_ido_2", "type": "text-box", "prompt": "Mission: 15 - 3. Solve it!", "visual": "number_line: {start:0, end:20, start_point:15, jumps:[{dir:'back', size:1}, {dir:'back', size:1}, {dir:'back', size:1}]}", "data": { "size": 2 }, "correct": "12" },
+                { "id": "d4_ido_3", "type": "true-false", "prompt": "For 19 - 1, you only need to count back one number. True or False?", "visual": "", "data": { "options": ["True", "False"] }, "correct": "True" }
+              ],
+              "we_do": [
+                { "id": "d4_wedo_1", "type": "mc", "prompt": "Look at 16 - 3. How many jumps back should we make?", "visual": "", "data": { "options": ["1", "2", "3"] }, "correct": "3" },
+                { "id": "d4_wedo_2", "type": "mc", "prompt": "Let's solve 16 - 3 together.", "visual": "number_line: {start:0, end:20, start_point:16, jumps:[{dir:'back', size:1}, {dir:'back', size:1}, {dir:'back', size:1}]}", "data": { "options": ["13", "14", "15"] }, "correct": "13" },
+                { "id": "d4_wedo_3", "type": "true-false", "prompt": "12 - 2 has the same answer as 11 - 1. True or False?", "visual": "", "data": { "options": ["True", "False"] }, "correct": "True" },
+                { "id": "d4_wedo_4", "type": "text-box", "prompt": "Type the answer: 18 - 1 = ?", "visual": "", "data": { "size": 2 }, "correct": "17" },
+                { "id": "d4_wedo_5", "type": "drag-drop-match", "prompt": "Drag the number of jumps to the problem.", "visual": "equation_card: {text:'14 - 2 = ?'}", "data": { "draggables": ["1 Jump", "2 Jumps", "3 Jumps"], "dropTargets": ["Problem"] }, "correct": { "2 Jumps": "Problem" } },
+                { "id": "d4_wedo_6", "type": "mc", "prompt": "Solve: 20 - 3", "visual": "", "data": { "options": ["17", "18", "19"] }, "correct": "17" },
+                { "id": "d4_wedo_7", "type": "true-false", "prompt": "To solve 15 - 1, you jump back to 14.", "visual": "", "data": { "options": ["True", "False"] }, "correct": "True" },
+                { "id": "d4_wedo_8", "type": "text-box", "prompt": "Solve: 13 - 2", "visual": "", "data": { "size": 2 }, "correct": "11" },
+                { "id": "d4_wedo_9", "type": "mc", "prompt": "Which problem has the biggest answer?", "visual": "", "data": { "options": ["19 - 1", "19 - 2", "19 - 3"] }, "correct": "19 - 1" },
+                { "id": "d4_wedo_10", "type": "drag-drop-match", "prompt": "Match the problem to its answer.", "visual": "", "data": { "draggables": ["15 - 2", "15 - 3"], "dropTargets": ["12", "13"] }, "correct": { "15 - 2": "13", "15 - 3": "12" } }
+              ],
+              "you_do": [
+                { "id": "d4_youdo_1", "type": "mc", "prompt": "Solve: 18 - 3 = ?", "visual": "", "data": { "options": ["15", "16", "17"] }, "correct": "15" },
+                { "id": "d4_youdo_2", "type": "text-box", "prompt": "Solve: 19 - 2 = ?", "visual": "", "data": { "size": 2 }, "correct": "17" },
+                { "id": "d4_youdo_3", "type": "true-false", "prompt": "16 - 1 = 15. Is that right?", "visual": "", "data": { "options": ["True", "False"] }, "correct": "True" },
+                { "id": "d4_youdo_4", "type": "mc", "prompt": "Which problem has the smallest answer?", "visual": "", "data": { "options": ["12 - 1", "12 - 2", "12 - 3"] }, "correct": "12 - 3" },
+                { "id": "d4_youdo_5", "type": "drag-drop-match", "prompt": "Drag the correct answer to the equation: 14 - 2 = ?", "visual": "", "data": { "draggables": ["12", "13"], "dropTargets": ["Equation"] }, "correct": { "12": "Equation" } }
+              ]
+            },
+            "practice_center": {
+              "level1": [],
+              "level2": [],
+              "level3": []
+            }
+          }
+        };
+        
+        // --- STATE MANAGEMENT ---
+        let appState = {
+            activeDay: 'day1',
+            currentMode: 'lesson', // 'lesson' or 'practice'
+            progress: {},
+            practiceLevel: 'level1',
+            correctStreak: 0
+        };
+
+        const POSITIVE_FEEDBACK = ["Blast off!", "Out of this world!", "Mission success!", "You're a star!", "Supernova smarts!"];
+
+        // --- SVG & DYNAMIC ELEMENT GENERATION ---
+
+        const createSvgElement = (tag, attrs) => {
+            const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+            for (let key in attrs) {
+                el.setAttribute(key, attrs[key]);
+            }
+            return el;
+        };
+        
+        const generateVisual = (visualString) => {
+            if (!visualString) return null;
+
+            const svg = createSvgElement('svg', { viewBox: '0 0 500 100', class: 'w-full h-auto max-w-2xl mx-auto' });
+            
+            const [type, paramsStr] = visualString.split(/:(.+)/);
+            let params = {};
+            if (paramsStr) {
+                try {
+                    params = new Function(`return ${paramsStr}`)();
+                } catch (e) {
+                    console.error("Could not parse visual params:", paramsStr, e);
+                    return null;
+                }
+            }
+            
+            switch (type.trim()) {
+                case 'number_line':
+                    const { start = 0, end = 20, start_point, jumps = [], elements = [] } = params;
+                    const range = end - start;
+                    const getX = (num) => 20 + ((num - start) / range) * 460;
+
+                    const lineGroup = createSvgElement('g');
+                    // Line
+                    lineGroup.appendChild(createSvgElement('line', { x1: 20, y1: 50, x2: 480, y2: 50, stroke: '#7f7fbf', 'stroke-width': 3 }));
+                    // Ticks and numbers
+                    for (let i = start; i <= end; i++) {
+                        const x = getX(i);
+                        lineGroup.appendChild(createSvgElement('line', { x1: x, y1: 45, x2: x, y2: 55, stroke: '#a8a8d8', 'stroke-width': 2 }));
+                        if (i % 2 === 0 || range <= 10) {
+                            const text = createSvgElement('text', { x: x, y: 75, 'font-size': '14px', fill: '#e0e0ff', 'text-anchor': 'middle' });
+                            text.textContent = i;
+                            lineGroup.appendChild(text);
+                        }
+                    }
+                    svg.appendChild(lineGroup);
+
+                    // Jumps
+                    if (start_point !== undefined) {
+                        let currentPos = start_point;
+                        jumps.forEach(jump => {
+                            const startX = getX(currentPos);
+                            const endX = getX(currentPos - jump.size);
+                            const pathData = `M ${startX} 45 C ${startX - 15} 10, ${endX + 15} 10, ${endX} 45`;
+                            const path = createSvgElement('path', { d: pathData, stroke: '#00ffff', 'stroke-width': 2, fill: 'none', 'marker-end': 'url(#arrow)' });
+                            svg.appendChild(path);
+                            currentPos -= jump.size;
+                        });
+                        // Rocket at starting point
+                        const rocketText = createSvgElement('text', { x: getX(start_point), y: 35, 'font-size': '24px', 'text-anchor': 'middle' });
+                        rocketText.textContent = '🚀';
+                        svg.appendChild(rocketText);
+                    }
+                    
+                    // Static elements
+                    elements.forEach(el => {
+                        const elText = createSvgElement('text', { x: getX(el.position), y: 35, 'font-size': '24px', 'text-anchor': 'middle' });
+                        elText.textContent = el.type === 'rocket' ? '🚀' : '❓';
+                        svg.appendChild(elText);
+                    });
+
+                    // Arrowhead definition
+                    const defs = createSvgElement('defs');
+                    const marker = createSvgElement('marker', { id: 'arrow', viewBox: '0 0 10 10', refX: '8', refY: '5', markerWidth: '6', markerHeight: '6', orient: 'auto-start-reverse' });
+                    marker.appendChild(createSvgElement('path', { d: 'M 0 0 L 10 5 L 0 10 z', fill: '#00ffff' }));
+                    defs.appendChild(marker);
+                    svg.appendChild(defs);
+                    break;
+
+                case 'equation_card':
+                    svg.setAttribute('viewBox', '0 0 300 100');
+                    const card = createSvgElement('g');
+                    card.appendChild(createSvgElement('rect', { x: 50, y: 20, width: 200, height: 60, rx: 10, fill: '#1d1d3d', stroke: '#7f7fbf', 'stroke-width': 2 }));
+                    const text = createSvgElement('text', { x: 150, y: 58, 'font-size': '28px', 'font-weight': 'bold', fill: '#e0e0ff', 'text-anchor': 'middle' });
+                    text.textContent = params.text;
+                    card.appendChild(text);
+                    svg.appendChild(card);
+                    break;
+            }
+            return svg;
+        };
+
+        // --- APPLICATION LOGIC ---
+        const init = () => {
+            loadProgress();
+            renderTabs();
+            renderDay(appState.activeDay);
+            setupEventListeners();
+        };
+
+        const renderTabs = () => {
+            const tabsContainer = document.getElementById('main-tabs');
+            tabsContainer.innerHTML = '';
+            Object.keys(lessonData).forEach(dayKey => {
+                const dayNum = dayKey.replace('day', '');
+                const button = document.createElement('button');
+                button.className = `tab-btn ${appState.activeDay === dayKey ? 'active' : ''}`;
+                button.textContent = `Day ${dayNum}`;
+                button.dataset.day = dayKey;
+                tabsContainer.appendChild(button);
+            });
+        };
+
+        const renderDay = (dayKey) => {
+            const dayData = lessonData[dayKey];
+            const contentArea = document.getElementById('content-area');
+            
+            if (!appState.progress[dayKey]) {
+                appState.progress[dayKey] = {
+                    lesson: { slideIndex: 0, answers: {} },
+                    practice: { slideIndex: 0, answers: {} }
+                };
+            }
+
+            contentArea.innerHTML = `
+                <div class="day-container" data-day="${dayKey}">
+                    <div class="flex justify-between items-center mb-4">
+                        <button class="mode-toggle-btn space-btn" data-mode="${appState.currentMode === 'lesson' ? 'practice' : 'lesson'}">
+                            Go to ${appState.currentMode === 'lesson' ? 'Practice' : 'Lesson'}
+                        </button>
+                        <div id="streak-counter" class="text-2xl font-bold text-yellow-300 ${appState.currentMode === 'practice' ? '' : 'hidden'}">
+                            ⭐ Streak: ${appState.correctStreak}
+                        </div>
+                    </div>
+                    <div id="lesson-view" class="${appState.currentMode === 'lesson' ? '' : 'hidden'}"></div>
+                    <div id="practice-view" class="${appState.currentMode === 'practice' ? '' : 'hidden'}"></div>
+                </div>
+            `;
+            
+            if (appState.currentMode === 'lesson') {
+                renderLessonView(dayKey);
+            } else {
+                renderPracticeView(dayKey);
+            }
+        };
+        
+        const renderLessonView = (dayKey) => {
+            const dayData = lessonData[dayKey];
+            const lessonContainer = document.getElementById('lesson-view');
+            const lessonProgress = appState.progress[dayKey].lesson;
+            
+            const allSlides = [].concat(...Object.values(dayData.sections));
+
+            lessonContainer.innerHTML = `
+                <h2 class="text-3xl font-bold text-center mb-2 text-cyan-300">${dayData.title}</h2>
+                <p class="text-center text-lg italic mb-4 text-purple-300">${dayData.standard}</p>
+                <div id="lesson-slides-container"></div>
+                <div class="flex justify-between items-center mt-4">
+                    <button id="lesson-prev-btn" class="space-btn">⬅️ Previous</button>
+                    <div class="w-1/2 h-6 bg-[#1d1d3d] rounded-full border-2 border-[#7f7fbf]">
+                        <div class="h-full bg-cyan-400 rounded-full transition-all duration-300" style="width: ${((lessonProgress.slideIndex + 1) / allSlides.length) * 100}%"></div>
+                    </div>
+                    <button id="lesson-next-btn" class="space-btn">Next ➡️</button>
+                </div>
+            `;
+            
+            renderSlide('lesson', dayKey, lessonProgress.slideIndex);
+        };
+
+        const renderPracticeView = (dayKey) => {
+            const practiceContainer = document.getElementById('practice-view');
+            const practiceProgress = appState.progress[dayKey].practice;
+            const level = appState.practiceLevel;
+            const questions = lessonData[dayKey].practice_center[level];
+
+            practiceContainer.innerHTML = `
+                <div class="flex justify-center items-center mb-4 space-x-4">
+                    <h2 class="text-3xl font-bold text-cyan-300">Practice Center</h2>
+                    <select id="level-select" class="space-btn bg-[#1d1d3d] text-white">
+                        <option value="level1" ${level === 'level1' ? 'selected' : ''}>Level 1: Approaching</option>
+                        <option value="level2" ${level === 'level2' ? 'selected' : ''}>Level 2: On Level</option>
+                        <option value="level3" ${level === 'level3' ? 'selected' : ''}>Level 3: Exceeding</option>
+                    </select>
+                </div>
+                <div id="practice-slides-container"></div>
+                 <div class="flex justify-between items-center mt-4">
+                    <button id="practice-prev-btn" class="space-btn">⬅️ Previous</button>
+                    <span class="font-bold text-lg">${practiceProgress.slideIndex + 1} / ${questions.length}</span>
+                    <button id="practice-next-btn" class="space-btn">Next ➡️</button>
+                </div>
+            `;
+            
+            renderSlide('practice', dayKey, practiceProgress.slideIndex);
+        };
+
+        const renderSlide = (mode, dayKey, slideIndex) => {
+            const container = document.getElementById(`${mode}-slides-container`);
+            if (!container) return;
+
+            let slideData;
+            if (mode === 'lesson') {
+                const allSlides = [].concat(...Object.values(lessonData[dayKey].sections));
+                slideData = allSlides[slideIndex];
+            } else {
+                const level = appState.practiceLevel;
+                slideData = lessonData[dayKey].practice_center[level][slideIndex];
+            }
+
+            if (!slideData) return;
+
+            const slideElement = document.createElement('div');
+            slideElement.className = 'slide flex flex-col items-center justify-center text-center';
+            slideElement.dataset.id = slideData.id;
+
+            const visualElement = generateVisual(slideData.visual);
+            
+            slideElement.innerHTML = `
+                <p class="text-2xl mb-4">${slideData.prompt}</p>
+                ${visualElement ? `<div class="visual-container mb-4 w-full">${visualElement.outerHTML}</div>` : ''}
+                <div class="interactive-area w-full max-w-2xl"></div>
+                <div class="feedback-area mt-4 w-full max-w-2xl"></div>
+            `;
+
+            container.innerHTML = '';
+            container.appendChild(slideElement);
+            
+            renderInteractiveElement(slideElement, slideData);
+
+            const savedAnswer = appState.progress[dayKey][mode].answers[slideData.id];
+            if (savedAnswer) {
+                restoreAnswer(slideElement, slideData.type, savedAnswer);
+                handleCheckAnswer({ target: slideElement.querySelector('.check-answer-btn') });
+            }
+            
+            if (mode === 'lesson') {
+                const allLessonSlides = [].concat(...Object.values(lessonData[dayKey].sections));
+                if (slideIndex === allLessonSlides.length - 1) {
+                    const btn = document.createElement('button');
+                    btn.textContent = 'Go to Practice Center! 🚀';
+                    btn.className = 'space-btn text-2xl mt-8 mode-toggle-btn';
+                    btn.dataset.mode = 'practice';
+                    slideElement.querySelector('.interactive-area').appendChild(btn);
+                }
+            }
+            
+            updateNavButtons(mode, dayKey);
+        };
+
+        const renderInteractiveElement = (slideElement, question) => {
+            const container = slideElement.querySelector('.interactive-area');
+            switch (question.type) {
+                case 'mc':
+                case 'multi-select':
+                case 'true-false':
+                    const optionsContainer = document.createElement('div');
+                    optionsContainer.className = 'flex flex-wrap justify-center gap-4';
+                    question.data.options.forEach(option => {
+                        const button = document.createElement('button');
+                        button.className = 'space-btn text-xl';
+                        button.textContent = option;
+                        button.dataset.option = option;
+                        optionsContainer.appendChild(button);
+                    });
+                    container.appendChild(optionsContainer);
+                    break;
+                case 'text-box':
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.maxLength = question.data.size;
+                    input.className = 'p-2 bg-gray-800 border-2 border-[#7f7fbf] rounded-lg text-2xl text-center text-white w-full md:w-1/2';
+                    container.appendChild(input);
+                    break;
+                case 'drag-drop-match':
+                case 'drag-drop-sort':
+                    initDragAndDrop(slideElement, question);
+                    break;
+            }
+
+            if (question.type !== 'content') {
+                 const checkButton = document.createElement('button');
+                 checkButton.textContent = 'Check Answer';
+                 checkButton.className = 'space-btn check-answer-btn mt-6';
+                 container.appendChild(checkButton);
+            }
+        };
+        
+        function initDragAndDrop(slideElement, question) {
+            const interactiveArea = slideElement.querySelector('.interactive-area');
+            interactiveArea.innerHTML = ''; // Clear for DD setup
+
+            if (question.type === 'drag-drop-match') {
+                const container = document.createElement('div');
+                container.className = 'flex flex-col md:flex-row items-center justify-center gap-8';
+                
+                const draggablesContainer = document.createElement('div');
+                draggablesContainer.className = 'flex flex-col gap-4';
+                question.data.draggables.forEach(item => {
+                    const el = document.createElement('div');
+                    el.className = 'space-btn draggable text-xl p-4';
+                    el.textContent = item;
+                    el.draggable = true;
+                    el.dataset.value = item;
+                    draggablesContainer.appendChild(el);
+                });
+
+                const dropTargetsContainer = document.createElement('div');
+                dropTargetsContainer.className = 'flex flex-col gap-4';
+                question.data.dropTargets.forEach(target => {
+                    const targetEl = document.createElement('div');
+                    targetEl.className = 'flex items-center gap-4';
+                    targetEl.innerHTML = `<div class="drop-target w-48 h-16 rounded-lg flex items-center justify-center" data-target="${target}"></div><span class="text-xl font-bold">${target}</span>`;
+                    dropTargetsContainer.appendChild(targetEl);
+                });
+
+                container.appendChild(draggablesContainer);
+                container.appendChild(dropTargetsContainer);
+                interactiveArea.appendChild(container);
+            }
+            
+            let draggedItem = null;
+            slideElement.querySelectorAll('.draggable').forEach(item => {
+                item.addEventListener('dragstart', (e) => {
+                    draggedItem = e.target;
+                    setTimeout(() => e.target.style.opacity = '0.5', 0);
+                });
+                item.addEventListener('dragend', (e) => {
+                    draggedItem = null;
+                    e.target.style.opacity = '1';
+                });
+            });
+
+            slideElement.querySelectorAll('.drop-target').forEach(target => {
+                target.addEventListener('dragover', (e) => { e.preventDefault(); target.classList.add('over'); });
+                target.addEventListener('dragleave', () => { target.classList.remove('over'); });
+                target.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    target.classList.remove('over');
+                    if (draggedItem) {
+                        if (target.children.length > 0) {
+                            const existingItem = target.firstElementChild;
+                            draggedItem.parentElement.appendChild(existingItem);
+                        }
+                        target.appendChild(draggedItem);
+                        saveProgress(question.id);
+                    }
+                });
+            });
+        }
+
+        const updateNavButtons = (mode, dayKey) => {
+            const progress = appState.progress[dayKey][mode];
+            const prevBtn = document.getElementById(`${mode}-prev-btn`);
+            const nextBtn = document.getElementById(`${mode}-next-btn`);
+            
+            let totalSlides;
+            if (mode === 'lesson') {
+                totalSlides = [].concat(...Object.values(lessonData[dayKey].sections)).length;
+            } else {
+                totalSlides = lessonData[dayKey].practice_center[appState.practiceLevel].length;
+            }
+
+            prevBtn.disabled = progress.slideIndex === 0;
+            nextBtn.disabled = progress.slideIndex === totalSlides - 1;
+            prevBtn.style.opacity = prevBtn.disabled ? 0.5 : 1;
+            nextBtn.style.opacity = nextBtn.disabled ? 0.5 : 1;
+        };
+        
+        // --- EVENT HANDLERS ---
+        const setupEventListeners = () => {
+            document.getElementById('main-tabs').addEventListener('click', handleTabClick);
+            document.getElementById('content-area').addEventListener('click', handleContentClick);
+            document.getElementById('download-work-btn').addEventListener('click', downloadWork);
+            document.getElementById('download-pdf-btn').addEventListener('click', downloadPDF);
+        };
+        
+        const handleContentClick = (e) => {
+            const target = e.target;
+            
+            if (target.closest('.mode-toggle-btn')) {
+                appState.currentMode = target.closest('.mode-toggle-btn').dataset.mode;
+                appState.correctStreak = 0;
+                renderDay(appState.activeDay);
+                saveProgress();
+            }
+            
+            if (target.matches('#level-select')) {
+                appState.practiceLevel = target.value;
+                appState.progress[appState.activeDay].practice.slideIndex = 0;
+                appState.correctStreak = 0;
+                renderPracticeView(appState.activeDay);
+                saveProgress();
+            }
+
+            if (target.matches('#lesson-prev-btn, #lesson-next-btn, #practice-prev-btn, #practice-next-btn')) {
+                handleSlideNav(target.id);
+            }
+            
+            if (target.closest('.interactive-area .space-btn') && target.closest('.interactive-area .space-btn').dataset.option) {
+                handleOptionSelect(target.closest('.interactive-area .space-btn'));
+            }
+
+            if (target.closest('.check-answer-btn')) {
+                handleCheckAnswer({ target: target.closest('.check-answer-btn') });
+            }
+        };
+
+        const handleTabClick = (e) => {
+            const dayKey = e.target.dataset.day;
+            if (dayKey) {
+                appState.activeDay = dayKey;
+                appState.currentMode = 'lesson';
+                appState.correctStreak = 0;
+                renderTabs();
+                renderDay(dayKey);
+                saveProgress();
+            }
+        };
+
+        const handleSlideNav = (buttonId) => {
+            const [mode, direction] = buttonId.split('-');
+            const progress = appState.progress[appState.activeDay][mode];
+            
+            if (direction === 'next') progress.slideIndex++;
+            if (direction === 'prev') progress.slideIndex--;
+
+            renderSlide(mode, appState.activeDay, progress.slideIndex);
+            saveProgress();
+        };
+
+        const handleOptionSelect = (selectedButton) => {
+            const slide = selectedButton.closest('.slide');
+            const questionId = slide.dataset.id;
+            const mode = document.getElementById('lesson-view').classList.contains('hidden') ? 'practice' : 'lesson';
+
+            let question;
+            if (mode === 'lesson') {
+                question = [].concat(...Object.values(lessonData[appState.activeDay].sections)).find(q => q.id === questionId);
+            } else {
+                question = lessonData[appState.activeDay].practice_center[appState.practiceLevel].find(q => q.id === questionId);
+            }
+
+            if (question.type === 'multi-select') {
+                selectedButton.classList.toggle('bg-cyan-500');
+            } else {
+                slide.querySelectorAll('[data-option]').forEach(btn => btn.classList.remove('bg-cyan-500'));
+                selectedButton.classList.add('bg-cyan-500');
+            }
+            saveProgress(questionId);
+        };
+        
+        const handleCheckAnswer = (e) => {
+            const button = e.target;
+            const slide = button.closest('.slide');
+            if (!slide) return;
+
+            const questionId = slide.dataset.id;
+            const mode = document.getElementById('lesson-view').classList.contains('hidden') ? 'practice' : 'lesson';
+            
+            let question;
+            if (mode === 'lesson') {
+                question = [].concat(...Object.values(lessonData[appState.activeDay].sections)).find(q => q.id === questionId);
+            } else {
+                question = lessonData[appState.activeDay].practice_center[appState.practiceLevel].find(q => q.id === questionId);
+            }
+
+            let userAnswer;
+            let isCorrect = false;
+
+            switch (question.type) {
+                case 'mc':
+                case 'true-false':
+                    const selected = slide.querySelector('.bg-cyan-500');
+                    userAnswer = selected ? selected.dataset.option : null;
+                    isCorrect = userAnswer === question.correct;
+                    break;
+                case 'multi-select':
+                    const selectedNodes = slide.querySelectorAll('.bg-cyan-500');
+                    userAnswer = Array.from(selectedNodes).map(n => n.dataset.option);
+                    isCorrect = question.correct.length === userAnswer.length && question.correct.every(val => userAnswer.includes(val));
+                    break;
+                case 'text-box':
+                    const input = slide.querySelector('input[type="text"]');
+                    userAnswer = input.value.trim();
+                    isCorrect = userAnswer.toLowerCase() === question.correct.toLowerCase();
+                    break;
+                case 'drag-drop-match':
+                    const matchTargets = slide.querySelectorAll('.drop-target');
+                    userAnswer = {};
+                    let allMatched = true;
+                    matchTargets.forEach(target => {
+                        const dropped = target.querySelector('.draggable');
+                        if (dropped) {
+                            userAnswer[dropped.dataset.value] = target.dataset.target;
+                        } else {
+                            allMatched = false;
+                        }
+                    });
+                    isCorrect = allMatched && JSON.stringify(userAnswer) === JSON.stringify(question.correct);
+                    break;
+            }
+
+            displayFeedback(slide, isCorrect, mode);
+            
+            const interactiveElements = slide.querySelectorAll('.interactive-area button, .interactive-area input, .draggable');
+            interactiveElements.forEach(el => el.disabled = true);
+            slide.querySelectorAll('.draggable').forEach(el => el.draggable = false);
+            button.style.display = 'none';
+        };
+
+        const displayFeedback = (slide, isCorrect, mode) => {
+            const feedbackArea = slide.querySelector('.feedback-area');
+            const feedbackDiv = document.createElement('div');
+            feedbackDiv.className = `feedback ${isCorrect ? 'correct' : 'incorrect'}`;
+
+            if (isCorrect) {
+                feedbackDiv.textContent = `🎉 ${POSITIVE_FEEDBACK[Math.floor(Math.random() * POSITIVE_FEEDBACK.length)]}`;
+                if (mode === 'practice') appState.correctStreak++;
+            } else {
+                feedbackDiv.textContent = '🤔 Houston, we have a miscalculation. Try again, Cadet!';
+                if (mode === 'practice') appState.correctStreak = 0;
+            }
+            feedbackArea.innerHTML = '';
+            feedbackArea.appendChild(feedbackDiv);
+            
+            const streakCounter = document.getElementById('streak-counter');
+            if (streakCounter) streakCounter.textContent = `⭐ Streak: ${appState.correctStreak}`;
+        };
+
+        // --- DATA PERSISTENCE ---
+        const saveProgress = (questionId = null) => {
+            if (questionId) {
+                const slide = document.querySelector(`[data-id="${questionId}"]`);
+                if (!slide) return;
+                
+                const mode = document.getElementById('lesson-view').classList.contains('hidden') ? 'practice' : 'lesson';
+                const dayKey = appState.activeDay;
+
+                let question;
+                if (mode === 'lesson') {
+                    question = [].concat(...Object.values(lessonData[dayKey].sections)).find(q => q.id === questionId);
+                } else {
+                    question = lessonData[dayKey].practice_center[appState.practiceLevel].find(q => q.id === questionId);
+                }
+
+                let answer;
+                switch (question.type) {
+                    case 'mc':
+                    case 'true-false':
+                        answer = slide.querySelector('.bg-cyan-500')?.dataset.option || null;
+                        break;
+                    case 'multi-select':
+                        answer = Array.from(slide.querySelectorAll('.bg-cyan-500')).map(n => n.dataset.option);
+                        break;
+                    case 'text-box':
+                        answer = slide.querySelector('input').value;
+                        break;
+                    case 'drag-drop-match':
+                        answer = {};
+                        slide.querySelectorAll('.drop-target').forEach(target => {
+                            const dropped = target.querySelector('.draggable');
+                            if(dropped) answer[dropped.dataset.value] = target.dataset.target;
+                        });
+                        break;
+                }
+                appState.progress[dayKey][mode].answers[questionId] = answer;
+            }
+            
+            localStorage.setItem('spaceSubtractionProgress', JSON.stringify(appState));
+        };
+
+        const loadProgress = () => {
+            const progressDataScript = document.getElementById('progress-data');
+            let loadedState = null;
+
+            if (progressDataScript && progressDataScript.textContent.trim().length > 2) {
+                try {
+                    loadedState = JSON.parse(progressDataScript.textContent);
+                } catch (e) { console.error("Failed to parse embedded progress data.", e); }
+            } else {
+                const savedState = localStorage.getItem('spaceSubtractionProgress');
+                if (savedState) {
+                    try {
+                        loadedState = JSON.parse(savedState);
+                    } catch (e) { console.error("Failed to parse localStorage progress data.", e); }
+                }
+            }
+
+            if (loadedState) appState = loadedState;
+        };
+
+        const restoreAnswer = (slide, type, answer) => {
+            if (!answer) return;
+            switch (type) {
+                case 'mc':
+                case 'true-false':
+                    slide.querySelector(`[data-option="${answer}"]`)?.classList.add('bg-cyan-500');
+                    break;
+                case 'multi-select':
+                    answer.forEach(opt => slide.querySelector(`[data-option="${opt}"]`)?.classList.add('bg-cyan-500'));
+                    break;
+                case 'text-box':
+                    slide.querySelector('input').value = answer;
+                    break;
+                case 'drag-drop-match':
+                     Object.entries(answer).forEach(([draggableValue, targetValue]) => {
+                        const draggable = slide.querySelector(`[data-value="${draggableValue}"]`);
+                        const target = slide.querySelector(`[data-target="${targetValue}"]`);
+                        if (draggable && target) target.appendChild(draggable);
+                    });
+                    break;
+            }
+        };
+
+        const downloadWork = () => {
+            saveProgress();
+            const progressJsonString = JSON.stringify(appState);
+            const updatedHtml = document.documentElement.outerHTML.replace(
+                /<script id="progress-data" type="application\/json">.*?<\/script>/,
+                `<script id="progress-data" type="application/json">${progressJsonString}<\/script>`
+            );
+            const blob = new Blob([updatedHtml], { type: 'text/html' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'space-subtraction-progress.html';
+            a.click();
+            URL.revokeObjectURL(a.href);
+        };
+        
+        const downloadPDF = async () => {
+            const { jsPDF } = window.jspdf;
+            const clone = document.createElement('div');
+            clone.style.position = 'absolute';
+            clone.style.left = '-9999px';
+            clone.style.width = '1200px';
+            clone.style.background = 'white';
+            clone.style.color = 'black';
+            document.body.appendChild(clone);
+
+            for (const dayKey in lessonData) {
+                const dayData = lessonData[dayKey];
+                clone.innerHTML += `<h1 style="font-size: 24px; font-weight: bold; padding: 10px; background-color: #eee; text-align: center;">Day ${dayKey.replace('day', '')}: ${dayData.title}</h1>`;
+
+                const allSlides = [
+                    ...dayData.sections.hook, ...dayData.sections.i_do, ...dayData.sections.we_do, ...dayData.sections.you_do,
+                    ...(dayData.practice_center.level1 || []),
+                    ...(dayData.practice_center.level2 || []),
+                    ...(dayData.practice_center.level3 || [])
+                ];
+
+                for (const slideData of allSlides) {
+                    const savedAnswer = appState.progress[dayKey]?.lesson?.answers[slideData.id] || appState.progress[dayKey]?.practice?.answers[slideData.id];
+                    if (!savedAnswer || (Array.isArray(savedAnswer) && savedAnswer.length === 0)) continue;
+
+                    clone.innerHTML += `
+                        <div style="padding: 10px; border-bottom: 1px solid #ccc;">
+                            <p style="font-weight: bold;">${slideData.prompt}</p>
+                            <p style="color: blue;"><strong>Answer:</strong> ${JSON.stringify(savedAnswer)}</p>
+                        </div>
+                    `;
+                }
+            }
+
+            const canvas = await html2canvas(clone, { scale: 2 });
+            document.body.removeChild(clone);
+
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: 'a4' });
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const imgProps = pdf.getImageProperties(imgData);
+            const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+            let heightLeft = imgHeight;
+            let position = 0;
+
+            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+            heightLeft -= pdfHeight;
+
+            while (heightLeft > 0) {
+                position = heightLeft - imgHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+                heightLeft -= pdfHeight;
+            }
+            pdf.save('space-subtraction-work.pdf');
+        };
+
+        // --- START THE APP ---
+        init();
+    });
+    </script>
+</body>
+</html>
