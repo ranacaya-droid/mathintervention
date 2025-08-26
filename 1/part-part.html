@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number Detectives: Part-Part-Whole Unit</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        /* Custom styles for the app */
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+        }
+        .tab-active {
+            background-color: #FBBF24; /* Amber yellow */
+            color: #1A202C; /* Dark gray */
+            border-bottom: 4px solid #3B82F6; /* Blue */
+        }
+        .tab-inactive {
+            background-color: #E2E8F0; /* Light gray */
+        }
+        .slide {
+            display: none;
+        }
+        .slide.active {
+            display: block;
+        }
+        .draggable {
+            cursor: move;
+            touch-action: none;
+            user-select: none;
+        }
+        .drop-target {
+            border: 2px dashed #9CA3AF; /* Gray border */
+            min-height: 80px;
+        }
+        .feedback-correct {
+            border: 3px solid #10B981; /* Green */
+        }
+        .feedback-incorrect {
+            border: 3px solid #EF4444; /* Red */
+        }
+        .progress-footprint {
+            color: #CBD5E1; /* Light gray for inactive */
+            font-size: 2rem;
+        }
+        .progress-footprint.completed {
+            color: #FBBF24; /* Amber yellow for active */
+        }
+        /* Custom modal for feedback */
+        .feedback-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            transition: all 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 antialiased">
+
+    <!-- Main Application Container -->
+    <div id="app-container" class="max-w-7xl mx-auto p-4">
+
+        <!-- Header -->
+        <header class="bg-slate-700 text-white p-4 rounded-t-lg shadow-lg flex justify-between items-center flex-wrap gap-y-4">
+            <div>
+                <h1 class="text-2xl md:text-4xl font-bold">🕵️ Number Detectives HQ</h1>
+                <p class="text-sm md:text-base text-slate-300">Unit: Part-Part-Whole Mysteries</p>
+            </div>
+            <div id="header-controls" class="flex flex-col sm:flex-row gap-2">
+                 <button id="go-to-practice-btn-header" class="hidden bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105">
+                    Go to Practice
+                </button>
+                 <button id="back-to-lesson-btn" class="hidden bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105">
+                    Back to Lesson
+                </button>
+                <button id="download-work-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105">
+                    Save Work
+                </button>
+                <button id="download-pdf-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105">
+                    Export PDF
+                </button>
+            </div>
+        </header>
+
+        <!-- Tab Navigation -->
+        <nav id="tab-nav" class="flex bg-slate-200 rounded-b-lg p-1 shadow-md">
+            <!-- Tabs will be dynamically inserted here -->
+        </nav>
+
+        <!-- Main Content Area -->
+        <main id="main-content" class="mt-4 bg-white p-6 rounded-lg shadow-inner min-h-[60vh] relative">
+            <!-- Content for each day will be dynamically inserted here -->
+        </main>
+
+    </div>
+
+    <!-- Feedback Modal -->
+    <div id="feedback-modal" class="feedback-modal hidden bg-white p-8 rounded-2xl shadow-2xl border-4 border-slate-700 text-center">
+        <p id="feedback-text" class="text-3xl font-bold mb-4"></p>
+        <button id="feedback-close-btn" class="bg-slate-700 text-white font-bold py-2 px-6 rounded-lg text-xl hover:bg-slate-800">OK</button>
+    </div>
+
+
+    <!-- Student progress data will be injected here for saving -->
+    <script id="progress-data" type="application/json"></script>
+
+    <!-- Main JavaScript for the application -->
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // --- DATA ---
+        const lessonData = {
+            day1: {
+                title: "The Case of the Combined Clues",
+                lesson: [
+                    { id: "d1_hook", type: "instruction", title: "Hook: The Clue Jar", content: "Just like detectives put clues together to solve a mystery, we're going to put number 'clues' together to find a total. Let's look at the clue jar. How many red? How many yellow? How many all together?" },
+                    { id: "d1_demo", type: "instruction", title: "Demonstration: The Evidence Board", content: "This is our Part-Part-Whole mat. It's our Evidence Board! We put clues in the 'parts' at the bottom, and combine them in the 'whole' at the top to solve the case.", visual: "A part-part-whole mat." },
+                    { id: "d1_ido_0", type: "instruction", title: "I Do: Watch Me Solve", content: "Watch how I solve this first case. I'll move the parts to the whole and write the number sentence." },
+                    { id: "d1_ido_1", type: "mc", prompt: "I have 2 blue dots and 3 green dots. What is the whole?", visual: "A part-part-whole mat with 2 blue dots in one part and 3 green dots in one part.", data: { options: ["3", "4", "5"] }, correct: "5" },
+                    { id: "d1_ido_2", type: "mc", prompt: "I have 4 red dots and 1 yellow dot. What is the whole?", visual: "A part-part-whole mat with 4 red dots in one part and 1 yellow dot in one part.", data: { options: ["5", "6", "4"] }, correct: "5" },
+                    { id: "d1_ido_3", type: "mc", prompt: "I have 5 purple dots and 0 orange dots. What is the whole?", visual: "A part-part-whole mat with 5 purple dots in one part and 0 orange dots in one part.", data: { options: ["0", "5", "6"] }, correct: "5" },
+                    { id: "d1_wedo_0", type: "instruction", title: "We Do: Let's Be Partners", content: "Now let's solve some cases together! Talk with your partner and let's find the answers." },
+                    { id: "d1_wedo_1", type: "text-box", prompt: "If one part is 1 and the other part is 4, what is the whole?", visual: "A five-frame with 1 red dot and 4 yellow dots.", data: { size: 5 }, correct: "5" },
+                    { id: "d1_wedo_2", type: "true-false", prompt: "True or False: 3 and 2 make 5.", visual: "An image of 3 apples and 2 oranges.", data: { options: ["True", "False"] }, correct: "True" },
+                    { id: "d1_wedo_3", type: "drag-drop-match", prompt: "Match the parts to make the whole of 5.", data: { draggables: ["4", "2", "5"], dropTargets: ["1", "3", "0"] }, correct: { "4": "1", "2": "3", "5": "0" } },
+                    { id: "d1_wedo_4", type: "mc", prompt: "Which number sentence matches the picture?", visual: "A part-part-whole mat with 3 blue dots in one part and 2 blue dots in one part.", data: { options: ["3 + 2 = 5", "3 + 3 = 6", "2 + 2 = 4"] }, correct: "3 + 2 = 5" },
+                    { id: "d1_wedo_5", type: "text-box", prompt: "0 + 5 = ?", visual: "A number line from 0 to 5 with a jump from 0 to 5.", data: { size: 5 }, correct: "5" },
+                    { id: "d1_wedo_6", type: "true-false", prompt: "True or False: 1 and 5 make 5.", visual: "An image of 1 apple and 5 oranges.", data: { options: ["True", "False"] }, correct: "False" },
+                    { id: "d1_wedo_7", type: "mc", prompt: "I have 3 cookies. I get 2 more. How many in all?", visual: "An image of 3 cookies and 2 cookies.", data: { options: ["4", "5", "6"] }, correct: "5" },
+                    { id: "d1_wedo_8", type: "text-box", prompt: "2 + ___ = 5", visual: "A part-part-whole mat with 2 blue dots in one part and a question mark in the other.", data: { size: 5 }, correct: "3" },
+                    { id: "d1_wedo_9", type: "drag-drop-match", prompt: "Match the number sentence to the whole.", data: { draggables: ["1 + 4", "3 + 2", "0 + 5"], dropTargets: ["5", "5", "5"] }, correct: { "1 + 4": "5", "3 + 2": "5", "0 + 5": "5" } },
+                    { id: "d1_wedo_10", type: "true-false", prompt: "True or False: This picture shows 5.", visual: "A ten-frame with 4 red dots.", data: { options: ["True", "False"] }, correct: "False" },
+                    { id: "d1_youdo_0", type: "instruction", title: "You Do: Solve On Your Own!", content: "You've been promoted, detective! Solve these last few cases by yourself. When you're done, you'll unlock the Practice Center." },
+                    { id: "d1_youdo_1", type: "mc", prompt: "Which pair makes 5?", visual: "Three boxes with pairs of numbers: (1,3), (2,3), (4,2).", data: { options: ["1 and 3", "2 and 3", "4 and 2"] }, correct: "2 and 3" },
+                    { id: "d1_youdo_2", type: "text-box", prompt: "Write the number sentence for the picture.", visual: "A part-part-whole mat with 4 red dots in one part and 1 red dot in one part.", data: { size: 10 }, correct: "4 + 1 = 5" },
+                    { id: "d1_youdo_3", type: "true-false", prompt: "Does 3 + 1 = 5?", visual: "A number line from 0 to 5 with a jump from 0 to 3 and a jump from 3 to 4.", data: { options: ["True", "False"] }, correct: "False" },
+                    { id: "d1_youdo_4", type: "mc", prompt: "Find the whole.", visual: "A part-part-whole mat with 5 blue dots in one part and 0 red dots in one part.", data: { options: ["0", "5", "6"] }, correct: "5" },
+                    { id: "d1_youdo_5", type: "text-box", prompt: "1 + 4 = ?", visual: "An image of 1 star and 4 stars.", data: { size: 5 }, correct: "5" },
+                    { id: "d1_youdo_final", type: "instruction", title: "Great Work, Detective!", content: "You've solved the first set of cases. You can now go to the Practice Center for more training whenever you're ready!" }
+                ],
+                practice: { level1: [], level2: [], level3: [] }
+            },
+            day2: {
+                title: "The Case of the Ten Clues",
+                lesson: [
+                    { id: "d2_hook", type: "instruction", title: "Hook: Ten Frames", content: "Great work on yesterday's cases, detectives! Today, the cases are bigger. We need to find combinations that make 10. We have a new tool: the Ten Frame!" },
+                    { id: "d2_demo", type: "instruction", title: "Demonstration: Using the Ten Frame", content: "A ten frame helps us see partners to 10. When it's full, we know we have 10. If we have 7 red dots, how many more yellow dots do we need to fill the frame? That's right, 3! So 7 and 3 are partners to 10.", visual: "A ten-frame with 7 red dots and 3 yellow dots." },
+                    { id: "d2_ido_0", type: "instruction", title: "I Do: My Turn", content: "Watch me solve this case using the ten frame. I see 6 blue dots. I will fill the rest of the frame with green dots. I added 4 green dots. So, 6 + 4 = 10." },
+                    { id: "d2_ido_1", type: "mc", prompt: "I have 8 red dots. How many more to make 10?", visual: "A ten-frame with 8 red dots.", data: { options: ["1", "2", "3"] }, correct: "2" },
+                    { id: "d2_ido_2", type: "mc", prompt: "I have 5 yellow dots. How many more to make 10?", visual: "A ten-frame with 5 yellow dots.", data: { options: ["5", "4", "6"] }, correct: "5" },
+                    { id: "d2_ido_3", type: "mc", prompt: "I have 1 purple dot. How many more to make 10?", visual: "A ten-frame with 1 purple dot.", data: { options: ["10", "9", "8"] }, correct: "9" },
+                    { id: "d2_wedo_0", type: "instruction", title: "We Do: Teamwork", content: "Let's crack these cases as a team. Use your ten frames to help!" },
+                    { id: "d2_wedo_1", type: "text-box", prompt: "If one part is 3, what is the other part to make 10?", visual: "A ten-frame with 3 blue dots.", data: { size: 5 }, correct: "7" },
+                    { id: "d2_wedo_2", type: "true-false", prompt: "True or False: 4 and 6 make 10.", visual: "A ten-frame with 4 red dots and 6 yellow dots.", data: { options: ["True", "False"] }, correct: "True" },
+                    { id: "d2_wedo_3", type: "drag-drop-match", prompt: "Match the parts to make the whole of 10.", data: { draggables: ["8", "1", "5"], dropTargets: ["2", "9", "5"] }, correct: { "8": "2", "1": "9", "5": "5" } },
+                    { id: "d2_wedo_4", type: "mc", prompt: "Which number sentence matches the picture?", visual: "A ten-frame with 9 red dots and 1 yellow dot.", data: { options: ["9 + 1 = 10", "8 + 1 = 9", "9 + 2 = 11"] }, correct: "9 + 1 = 10" },
+                    { id: "d2_wedo_5", type: "text-box", prompt: "0 + 10 = ?", visual: "A number line from 0 to 10 with a jump from 0 to 10.", data: { size: 5 }, correct: "10" },
+                    { id: "d2_wedo_6", type: "true-false", prompt: "True or False: 2 and 7 make 10.", visual: "An image of 2 stars and 7 stars.", data: { options: ["True", "False"] }, correct: "False" },
+                    { id: "d2_wedo_7", type: "mc", prompt: "I have 6 apples. I need 10 for a pie. How many more do I need?", visual: "An image of 6 apples.", data: { options: ["3", "4", "5"] }, correct: "4" },
+                    { id: "d2_wedo_8", type: "text-box", prompt: "3 + ___ = 10", visual: "A part-part-whole mat with 3 blue dots in one part and a question mark in the other.", data: { size: 5 }, correct: "7" },
+                    { id: "d2_wedo_9", type: "drag-drop-match", prompt: "Match the number sentence to the whole.", data: { draggables: ["2 + 8", "6 + 4", "10 + 0"], dropTargets: ["10", "10", "10"] }, correct: { "2 + 8": "10", "6 + 4": "10", "10 + 0": "10" } },
+                    { id: "d2_wedo_10", type: "true-false", prompt: "True or False: This picture shows 10.", visual: "A ten-frame with 8 red dots.", data: { options: ["True", "False"] }, correct: "False" },
+                    { id: "d2_youdo_0", type: "instruction", title: "You Do: Go Solo", content: "You're ready for your own detective desk. Solve these cases to show you've mastered making 10." },
+                    { id: "d2_youdo_1", type: "mc", prompt: "Which pair makes 10?", visual: "Three boxes with pairs of numbers: (4,5), (7,3), (8,1).", data: { options: ["4 and 5", "7 and 3", "8 and 1"] }, correct: "7 and 3" },
+                    { id: "d2_youdo_2", type: "text-box", prompt: "Write the number sentence for the picture.", visual: "A ten-frame with 5 red dots and 5 yellow dots.", data: { size: 10 }, correct: "5 + 5 = 10" },
+                    { id: "d2_youdo_3", type: "true-false", prompt: "Does 1 + 8 = 10?", visual: "A number line from 0 to 10 with a jump from 0 to 1 and a jump from 1 to 9.", data: { options: ["True", "False"] }, correct: "False" },
+                    { id: "d2_youdo_4", type: "mc", prompt: "Find the whole.", visual: "A part-part-whole mat with 2 blue dots in one part and 8 green dots in one part.", data: { options: ["9", "10", "11"] }, correct: "10" },
+                    { id: "d2_youdo_5", type: "text-box", prompt: "4 + 6 = ?", visual: "An image of 4 stars and 6 stars.", data: { size: 5 }, correct: "10" },
+                    { id: "d2_youdo_final", type: "instruction", title: "Case Closed!", content: "Excellent work on the combinations of 10. You can go to the Practice Center for more advanced training." }
+                ],
+                practice: { level1: [], level2: [], level3: [] }
+            },
+            day3: {
+                title: "The Case of the Missing Clue",
+                lesson: [
+                    { id: "d3_hook", type: "instruction", title: "Hook: The Covered Part", content: "Detectives, look! Here is a case with 10 clues total, but some are hidden under this card! We can see 6 clues. How many must be hiding?", visual: "A part-part-whole mat with 10 dots in the whole, 6 dots in one part, and a large question mark covering the other part." },
+                    { id: "d3_demo", type: "instruction", title: "Demonstration: Finding the Missing Addend", content: "When we know the whole and one part, we can find the other part. This is called finding the 'missing addend'. If we know 8 + ? = 10, we can count up from 8 to find the missing part. 8... 9, 10. That's 2 counts! The missing part is 2.", visual: "A number line from 0 to 10 with a jump from 0 to 8, and question mark jumps from 8 to 10." },
+                    { id: "d3_ido_0", type: "instruction", title: "I Do: My Investigation", content: "Watch how I find the missing clue. The equation is 5 + ? = 8. I'll start at 5 and count up to 8. 5... 6, 7, 8. I counted 3 numbers. The missing clue is 3." },
+                    { id: "d3_ido_1", type: "mc", prompt: "Solve for the missing part: 4 + ? = 7", visual: "A part-part-whole mat with 7 dots in the whole and 4 dots in one part.", data: { options: ["2", "3", "4"] }, correct: "3" },
+                    { id: "d3_ido_2", type: "mc", prompt: "Solve for the missing part: 6 + ? = 10", visual: "A ten-frame with 6 red dots.", data: { options: ["3", "4", "5"] }, correct: "4" },
+                    { id: "d3_ido_3", type: "mc", prompt: "Solve for the missing part: ? + 5 = 9", visual: "A number line from 0 to 10 with a jump from 5 to 9 highlighted.", data: { options: ["4", "5", "6"] }, correct: "4" },
+                    { id: "d3_wedo_0", type: "instruction", title: "We Do: Group Investigation", content: "Let's find these missing clues together. Talk about your strategy with your team." },
+                    { id: "d3_wedo_1", type: "text-box", prompt: "2 + ___ = 6", visual: "A part-part-whole mat with 6 in the whole and 2 in a part.", data: { size: 5 }, correct: "4" },
+                    { id: "d3_wedo_2", type: "true-false", prompt: "True or False: The missing number is 5 in 3 + ? = 8.", visual: "An image of 3 apples and a box with a question mark, totaling 8 apples.", data: { options: ["True", "False"] }, correct: "True" },
+                    { id: "d3_wedo_3", type: "drag-drop-match", prompt: "Match the equation to the missing part.", data: { draggables: ["5 + ? = 10", "1 + ? = 8", "4 + ? = 6"], dropTargets: ["5", "7", "2"] }, correct: { "5 + ? = 10": "5", "1 + ? = 8": "7", "4 + ? = 6": "2" } },
+                    { id: "d3_wedo_4", type: "mc", prompt: "What is the missing number?", visual: "A ten-frame with 4 dots shown, and the rest empty.", data: { options: ["5", "6", "7"] }, correct: "6" },
+                    { id: "d3_wedo_5", type: "text-box", prompt: "___ + 7 = 9", visual: "A number line from 0 to 9 with a jump from 7 to 9 highlighted.", data: { size: 5 }, correct: "2" },
+                    { id: "d3_wedo_6", type: "true-false", prompt: "True or False: The missing part is 3 in ? + 3 = 7.", visual: "A part-part-whole mat with 7 in the whole and 3 in a part.", data: { options: ["True", "False"] }, correct: "False" },
+                    { id: "d3_wedo_7", type: "mc", prompt: "I need 8 stars. I have 5. How many more do I need?", visual: "An image of 5 stars.", data: { options: ["2", "3", "4"] }, correct: "3" },
+                    { id: "d3_wedo_8", type: "text-box", prompt: "8 + ___ = 10", visual: "A ten-frame with 8 blue dots.", data: { size: 5 }, correct: "2" },
+                    { id: "d3_wedo_9", type: "drag-drop-match", prompt: "Match the problem to the missing number.", data: { draggables: ["I have 6, I need 9", "I have 2, I need 5", "I have 7, I need 10"], dropTargets: ["3", "3", "3"] }, correct: { "I have 6, I need 9": "3", "I have 2, I need 5": "3", "I have 7, I need 10": "3" } },
+                    { id: "d3_wedo_10", type: "true-false", prompt: "True or False: The picture shows that 4 is the missing part in 6 + ? = 10.", visual: "A ten-frame with 6 red dots and 4 yellow dots.", data: { options: ["True", "False"] }, correct: "True" },
+                    { id: "d3_youdo_0", type: "instruction", title: "You Do: Top Secret Mission", content: "You've been given a top secret mission to find these missing clues on your own. Good luck, detective." },
+                    { id: "d3_youdo_1", type: "mc", prompt: "Which equation has a missing part of 5?", visual: "Three boxes with equations: (2+?=8), (5+?=10), (1+?=5).", data: { options: ["2 + ? = 8", "5 + ? = 10", "1 + ? = 5"] }, correct: "5 + ? = 10" },
+                    { id: "d3_youdo_2", type: "text-box", prompt: "Write the full number sentence.", visual: "A part-part-whole mat with 9 in the whole and 6 in a part.", data: { size: 10 }, correct: "6 + 3 = 9" },
+                    { id: "d3_youdo_3", type: "true-false", prompt: "Is the missing number 7 in 2 + ? = 9?", visual: "A number line from 0 to 9 with a jump from 0 to 2.", data: { options: ["True", "False"] }, correct: "True" },
+                    { id: "d3_youdo_4", type: "mc", prompt: "Find the missing part.", visual: "A ten-frame with 1 blue dot.", data: { options: ["7", "8", "9"] }, correct: "9" },
+                    { id: "d3_youdo_5", type: "text-box", prompt: "3 + ? = 7", visual: "An image of 3 stars and a question mark box, equaling 7 stars.", data: { size: 5 }, correct: "4" },
+                    { id: "d3_youdo_final", type: "instruction", title: "Mission Accomplished!", content: "You found all the missing clues! You can now visit the Practice Center for more challenging cases." }
+                ],
+                practice: { level1: [], level2: [], level3: [] }
+            },
+            day4: {
+                title: "The Case of the Swapped Operations",
+                lesson: [
+                    { id: "d4_hook", type: "instruction", title: "Hook: Fact Families", content: "Detectives, look at this evidence board! We have parts 3 and 4, and the whole is 7. We can write an addition sentence: 3 + 4 = 7. But we can also write a subtraction sentence starting with the whole: 7 - 4 = 3. They are related!", visual: "A part-part-whole mat with 3 dots in one part, 4 in the other, and 7 in the whole." },
+                    { id: "d4_demo", type: "instruction", title: "Demonstration: Relating Addition and Subtraction", content: "Addition and subtraction are inverse operations. They undo each other. If we know 6 + 2 = 8, we also know two subtraction facts: 8 - 2 = 6 and 8 - 6 = 2. This is called a fact family.", visual: "A triangle diagram with 8 at the top and 6 and 2 at the bottom corners." },
+                    { id: "d4_ido_0", type: "instruction", title: "I Do: Cracking the Code", content: "I see the numbers 5, 2, and 7. I know 5 + 2 = 7. That's one fact. If I start with the whole, 7, I can take away a part. 7 - 5 = 2. That's another fact!" },
+                    { id: "d4_ido_1", type: "mc", prompt: "If 4 + 5 = 9, which subtraction sentence is true?", visual: "A part-part-whole mat with parts 4 and 5, and whole 9.", data: { options: ["9 - 5 = 4", "5 - 4 = 1", "9 - 1 = 8"] }, correct: "9 - 5 = 4" },
+                    { id: "d4_ido_2", type: "mc", prompt: "If 10 - 3 = 7, which addition sentence is true?", visual: "A number line from 0 to 10 showing a jump from 10 back to 7.", data: { options: ["10 + 3 = 13", "7 + 3 = 10", "7 - 3 = 4"] }, correct: "7 + 3 = 10" },
+                    { id: "d4_ido_3", type: "mc", prompt: "Which number sentence does NOT belong to the 2, 8, 10 fact family?", visual: "A triangle diagram with 10, 2, and 8.", data: { options: ["2 + 8 = 10", "10 - 2 = 8", "8 - 2 = 6"] }, correct: "8 - 2 = 6" },
+                    { id: "d4_wedo_0", type: "instruction", title: "We Do: Uncovering Relationships", content: "Let's work together to see how addition and subtraction are connected." },
+                    { id: "d4_wedo_1", type: "text-box", prompt: "If 6 + 3 = 9, then 9 - 3 = ?", visual: "A part-part-whole mat with parts 6 and 3, and whole 9.", data: { size: 5 }, correct: "6" },
+                    { id: "d4_wedo_2", type: "true-false", prompt: "True or False: If 5 + 4 = 9, then 9 - 5 = 4.", visual: "A ten-frame with 5 red dots and 4 yellow dots.", data: { options: ["True", "False"] }, correct: "True" },
+                    { id: "d4_wedo_3", type: "drag-drop-match", prompt: "Match the addition sentence to its related subtraction sentence.", data: { draggables: ["3 + 5 = 8", "7 + 2 = 9", "1 + 6 = 7"], dropTargets: ["8 - 5 = 3", "9 - 2 = 7", "7 - 6 = 1"] }, correct: { "3 + 5 = 8": "8 - 5 = 3", "7 + 2 = 9": "9 - 2 = 7", "1 + 6 = 7": "7 - 6 = 1" } },
+                    { id: "d4_wedo_4", type: "mc", prompt: "Which fact is related to 8 - 5 = 3?", visual: "An image of 8 cookies, with 5 being crossed out.", data: { options: ["8 + 5 = 13", "5 - 3 = 2", "3 + 5 = 8"] }, correct: "3 + 5 = 8" },
+                    { id: "d4_wedo_5", type: "text-box", prompt: "Write a related addition fact for 10 - 1 = 9.", visual: "A number line from 0 to 10 with a jump from 10 back to 9.", data: { size: 10 }, correct: "9 + 1 = 10" },
+                    { id: "d4_wedo_6", type: "true-false", prompt: "True or False: 4 + 2 = 6 and 6 - 4 = 2 are in the same fact family.", visual: "A triangle diagram with 6, 4, and 2.", data: { options: ["True", "False"] }, correct: "True" },
+                    { id: "d4_wedo_7", type: "mc", prompt: "I know 3 + ? = 5. How can subtraction help me?", visual: "A part-part-whole mat with whole 5 and part 3.", data: { options: ["I can solve 5 - 3", "I can solve 5 + 3", "It can't help"] }, correct: "I can solve 5 - 3" },
+                    { id: "d4_wedo_8", type: "text-box", prompt: "If 2 + 7 = 9, then 9 - 7 = ?", visual: "An image of 2 stars and 7 stars.", data: { size: 5 }, correct: "2" },
+                    { id: "d4_wedo_9", type: "drag-drop-match", prompt: "Match the fact families (use the whole number).", data: { draggables: ["3, 4, 7", "5, 5, 10", "1, 8, 9"], dropTargets: ["7", "10", "9"] }, correct: { "3, 4, 7": "7", "5, 5, 10": "10", "1, 8, 9": "9" } },
+                    { id: "d4_wedo_10", type: "true-false", prompt: "True or False: 2 + 3 = 5 means 3 - 2 = 1.", visual: "A part-part-whole mat with parts 2 and 3, and whole 5.", data: { options: ["True", "False"] }, correct: "False" },
+                    { id: "d4_youdo_0", type: "instruction", title: "You Do: Final Exam", content: "This is your final test, detective. Show me you understand how addition and subtraction work together to solve cases." },
+                    { id: "d4_youdo_1", type: "mc", prompt: "Which sentence is in the same fact family as 6 + 4 = 10?", visual: "A ten-frame with 6 red dots and 4 yellow dots.", data: { options: ["10 - 6 = 4", "6 - 4 = 2", "10 + 4 = 14"] }, correct: "10 - 6 = 4" },
+                    { id: "d4_youdo_2", type: "text-box", prompt: "Write a subtraction sentence for this picture.", visual: "A part-part-whole mat with whole 8 and parts 5 and 3.", data: { size: 10 }, correct: "8 - 5 = 3" },
+                    { id: "d4_youdo_3", type: "true-false", prompt: "Is 9 - 7 = 2 related to 2 + 7 = 9?", visual: "A triangle diagram with 9, 7, and 2.", data: { options: ["True", "False"] }, correct: "True" },
+                    { id: "d4_youdo_4", type: "mc", prompt: "Use addition to solve 9 - 6 = ?", visual: "A number line from 0 to 9.", data: { options: ["6 + 3 = 9, so the answer is 3", "9 + 6 = 15, so the answer is 15", "6 - 3 = 3, so the answer is 3"] }, correct: "6 + 3 = 9, so the answer is 3" },
+                    { id: "d4_youdo_5", type: "text-box", prompt: "Write the whole fact family for 1, 7, and 8.", visual: "A triangle diagram with 8, 1, and 7.", data: { size: 20 }, correct: "1+7=8, 7+1=8, 8-1=7, 8-7=1" },
+                    { id: "d4_youdo_final", type: "instruction", title: "Unit Complete!", content: "Congratulations, Chief Detective! You've solved the entire unit. You can go to the Practice Center to keep your skills sharp." }
+                ],
+                practice: { level1: [], level2: [], level3: [] }
+            },
+        };
+
+        // --- STATE MANAGEMENT ---
+        let appState = {
+            currentDay: 'day1',
+            currentView: 'lesson',
+            progress: {
+                day1: { lessonSlide: 0, lastLessonSlide: 0, practiceLevel: 'level1', answers: {} },
+                day2: { lessonSlide: 0, lastLessonSlide: 0, practiceLevel: 'level1', answers: {} },
+                day3: { lessonSlide: 0, lastLessonSlide: 0, practiceLevel: 'level1', answers: {} },
+                day4: { lessonSlide: 0, lastLessonSlide: 0, practiceLevel: 'level1', answers: {} },
+            }
+        };
+
+        // --- DOM ELEMENTS ---
+        const tabNav = document.getElementById('tab-nav');
+        const mainContent = document.getElementById('main-content');
+        const downloadWorkBtn = document.getElementById('download-work-btn');
+        const downloadPdfBtn = document.getElementById('download-pdf-btn');
+        const goToPracticeBtnHeader = document.getElementById('go-to-practice-btn-header');
+        const backToLessonBtn = document.getElementById('back-to-lesson-btn');
+        
+        // --- INITIALIZATION ---
+        function init() {
+            populateAllPracticeQuestions();
+            loadProgress();
+            renderApp();
+            attachEventListeners();
+        }
+
+        function populateAllPracticeQuestions() {
+            // Day 1: Combinations of 5
+            // Level 1: 10 MC, 5 T/F, 5 Drag-Match
+            for (let i = 1; i <= 10; i++) lessonData.day1.practice.level1.push({ id: `d1_l1_q${i}`, type: 'mc', prompt: `Which pair makes 5?`, visual: ``, data: { options: [`${i%5} and ${5-(i%5)}`, `${i%4} and ${4-(i%4)}`, `${i%3} and ${3-(i%3)}`] }, correct: `${i%5} and ${5-(i%5)}` });
+            for (let i = 1; i <= 5; i++) lessonData.day1.practice.level1.push({ id: `d1_l1_q${10+i}`, type: 'true-false', prompt: `True or False: ${i} and ${5-i} make 5.`, visual: `An image of ${i} apples and ${5-i} oranges.`, data: { options: ["True", "False"] }, correct: "True" });
+            for (let i = 1; i <= 5; i++) lessonData.day1.practice.level1.push({ id: `d1_l1_q${15+i}`, type: 'drag-drop-match', prompt: 'Match the numbers that make 5.', data: { draggables: [`${i%5}`, `${(i+1)%5}`], dropTargets: [`${5-(i%5)}`, `${5-((i+1)%5)}`] }, correct: { [`${i%5}`]: `${5-(i%5)}`, [`${(i+1)%5}`]: `${5-((i+1)%5)}` } });
+            // Level 2: 5 MC, 5 Multi-Select, 5 Text-Box, 5 Drag-Sort
+            for (let i = 1; i <= 5; i++) lessonData.day1.practice.level2.push({ id: `d1_l2_q${i}`, type: 'mc', prompt: `I have ${i} clues. How many more do I need to find to have 5?`, visual: `A five-frame with ${i} red dots.`, data: { options: [5-i, 5-i+1, 5-i-1] }, correct: 5-i });
+            for (let i = 1; i <= 5; i++) lessonData.day1.practice.level2.push({ id: `d1_l2_q${5+i}`, type: 'multi-select', prompt: `Select all pairs that make 5.`, visual: ``, data: { options: ["1 and 4", "2 and 2", "3 and 2", "0 and 5"] }, correct: ["1 and 4", "3 and 2", "0 and 5"] });
+            for (let i = 1; i <= 5; i++) lessonData.day1.practice.level2.push({ id: `d1_l2_q${10+i}`, type: 'text-box', prompt: `What is the missing part? ${i} + ? = 5`, visual: ``, data: { size: 5 }, correct: 5-i });
+            for (let i = 1; i <= 5; i++) lessonData.day1.practice.level2.push({ id: `d1_l2_q${15+i}`, type: 'drag-drop-sort', prompt: 'Sort the sums.', data: { items: ["2+3", "1+2", "4+1", "3+1"], categories: ["Makes 5", "Does Not Make 5"] }, correct: { "Makes 5": ["2+3", "4+1"], "Does Not Make 5": ["1+2", "3+1"] } });
+            // Level 3: 5 MC (complex), 5 Part A/B, 5 Constructed-Response, 5 Tech-Enhanced
+            for (let i = 1; i <= 5; i++) lessonData.day1.practice.level3.push({ id: `d1_l3_q${i}`, type: 'mc', prompt: `A detective has 1 clue. He finds 3 more. His partner finds 1. How many clues do they have?`, visual: `An image of 1 star, 3 stars, and 1 star.`, data: { options: ["3", "4", "5"] }, correct: "5" });
+            for (let i = 1; i <= 5; i++) lessonData.day1.practice.level3.push({ id: `d1_l3_q${5+i}`, type: 'mc', prompt: `Part A: Does 2+1+2 make 5? <br> Part B: Which sentence explains why?`, visual: ``, data: { options: ["Yes, because 2+1 is 3, and 3+2 is 5.", "No, because 2+1 is 2.", "Yes, because all the numbers are small."] }, correct: "Yes, because 2+1 is 3, and 3+2 is 5." });
+            for (let i = 1; i <= 5; i++) lessonData.day1.practice.level3.push({ id: `d1_l3_q${10+i}`, type: 'text-box', prompt: `Write a story problem for the number sentence ${i} + ${5-i} = 5.`, visual: ``, data: { size: 100 }, correct: `I have ${i} apples and get ${5-i} more.` });
+            for (let i = 1; i <= 5; i++) lessonData.day1.practice.level3.push({ id: `d1_l3_q${15+i}`, type: 'drag-drop-sort', prompt: 'Create a sequence of 3 numbers that add up to 5.', data: { items: ["1", "2", "3", "4", "0"], categories: ["Part 1", "Part 2", "Part 3"] }, correct: { "Part 1": ["1"], "Part 2": ["2"], "Part 3": ["2"] } });
+            
+            // Day 2: Combinations of 10
+            // Level 1: 10 MC, 5 T/F, 5 Drag-Match
+            for (let i = 1; i <= 10; i++) lessonData.day2.practice.level1.push({ id: `d2_l1_q${i}`, type: 'mc', prompt: `What is ${i} + ${10-i}?`, visual: `A ten-frame with ${i} red dots.`, data: { options: [10, 9, 11].sort(() => .5 - Math.random()) }, correct: 10 });
+            for (let i = 1; i <= 5; i++) lessonData.day2.practice.level1.push({ id: `d2_l1_q${10+i}`, type: 'true-false', prompt: `True or False: ${i} + ${10-i} = 10.`, visual: `An image of ${i} stars and ${10-i} stars.`, data: { options: ["True", "False"] }, correct: "True" });
+            for (let i = 1; i <= 5; i++) lessonData.day2.practice.level1.push({ id: `d2_l1_q${15+i}`, type: 'drag-drop-match', prompt: 'Match the numbers that make 10.', data: { draggables: [`${i}`, `${i+1}`], dropTargets: [`${10-i}`, `${10-(i+1)}`] }, correct: { [`${i}`]: `${10-i}`, [`${i+1}`]: `${10-(i+1)}` } });
+            // Level 2: 5 MC, 5 Multi-Select, 5 Text-Box, 5 Drag-Sort
+            for (let i = 1; i <= 5; i++) lessonData.day2.practice.level2.push({ id: `d2_l2_q${i}`, type: 'mc', prompt: `I have ${i} clues. How many more do I need to find to have 10?`, visual: `A ten-frame with ${i} red dots.`, data: { options: [10-i, 10-i+1, 10-i-1] }, correct: 10-i });
+            for (let i = 1; i <= 5; i++) lessonData.day2.practice.level2.push({ id: `d2_l2_q${5+i}`, type: 'multi-select', prompt: `Select all pairs that make 10.`, visual: ``, data: { options: ["2 and 8", "4 and 5", "6 and 4", "1 and 9"] }, correct: ["2 and 8", "6 and 4", "1 and 9"] });
+            for (let i = 1; i <= 5; i++) lessonData.day2.practice.level2.push({ id: `d2_l2_q${10+i}`, type: 'text-box', prompt: `What is the missing part? ${i} + ? = 10`, visual: ``, data: { size: 5 }, correct: 10-i });
+            for (let i = 1; i <= 5; i++) lessonData.day2.practice.level2.push({ id: `d2_l2_q${15+i}`, type: 'drag-drop-sort', prompt: 'Sort the sums.', data: { items: ["5+5", "3+6", "2+8", "4+7"], categories: ["Makes 10", "Does Not Make 10"] }, correct: { "Makes 10": ["5+5", "2+8"], "Does Not Make 10": ["3+6", "4+7"] } });
+            // Level 3: 5 MC (complex), 5 Part A/B, 5 Constructed-Response, 5 Tech-Enhanced
+            for (let i = 1; i <= 5; i++) lessonData.day2.practice.level3.push({ id: `d2_l3_q${i}`, type: 'mc', prompt: `A detective has 2 clues. He finds 3 more. His partner finds 5. How many clues do they have?`, visual: `An image of 2 stars, 3 stars, and 5 stars.`, data: { options: ["8", "9", "10"] }, correct: "10" });
+            for (let i = 1; i <= 5; i++) lessonData.day2.practice.level3.push({ id: `d2_l3_q${5+i}`, type: 'mc', prompt: `Part A: Does 5+2+3 make 10? <br> Part B: Which sentence explains why?`, visual: ``, data: { options: ["Yes, because 5+2 is 7, and 7+3 is 10.", "No, because 5+2 is 6.", "Yes, because all the numbers are small."] }, correct: "Yes, because 5+2 is 7, and 7+3 is 10." });
+            for (let i = 1; i <= 5; i++) lessonData.day2.practice.level3.push({ id: `d2_l3_q${10+i}`, type: 'text-box', prompt: `Write a story problem for the number sentence ${i} + ${10-i} = 10.`, visual: ``, data: { size: 100 }, correct: `I have ${i} apples and get ${10-i} more.` });
+            for (let i = 1; i <= 5; i++) lessonData.day2.practice.level3.push({ id: `d2_l3_q${15+i}`, type: 'drag-drop-sort', prompt: 'Create a sequence of 3 numbers that add up to 10.', data: { items: ["1", "2", "3", "4", "5", "6", "7"], categories: ["Part 1", "Part 2", "Part 3"] }, correct: { "Part 1": ["2"], "Part 2": ["3"], "Part 3": ["5"] } });
+
+            // Day 3: Missing Addend
+            // Level 1: 10 MC, 5 T/F, 5 Drag-Match
+            for (let i = 1; i <= 10; i++) { let w = i+2, p1=i; lessonData.day3.practice.level1.push({ id: `d3_l1_q${i}`, type: 'mc', prompt: `What is the missing part? ${p1} + ? = ${w}`, visual: ``, data: { options: [2, 1, 3] }, correct: 2 }); }
+            for (let i = 1; i <= 5; i++) { let w = i+3, p1=i; lessonData.day3.practice.level1.push({ id: `d3_l1_q${10+i}`, type: 'true-false', prompt: `True or False: The missing part is 3 in ${p1} + ? = ${w}.`, visual: ``, data: { options: ["True", "False"] }, correct: "True" }); }
+            for (let i = 1; i <= 5; i++) { lessonData.day3.practice.level1.push({ id: `d3_l1_q${15+i}`, type: 'drag-drop-match', prompt: 'Match equation to missing part.', data: { draggables: [`${i}+?=${i+1}`, `${i}+?=${i+2}`], dropTargets: [`1`, `2`] }, correct: { [`${i}+?=${i+1}`]: `1`, [`${i}+?=${i+2}`]: `2` } }); }
+            // Level 2: 5 MC, 5 Multi-Select, 5 Text-Box, 5 Drag-Sort
+            for (let i = 1; i <= 5; i++) { let w=i+4, p1=i; lessonData.day3.practice.level2.push({ id: `d3_l2_q${i}`, type: 'mc', prompt: `I need ${w} clues. I have ${p1}. How many more?`, visual: `An image of ${p1} stars.`, data: { options: [4, 3, 5] }, correct: 4 }); }
+            for (let i = 1; i <= 5; i++) { lessonData.day3.practice.level2.push({ id: `d3_l2_q${5+i}`, type: 'multi-select', prompt: `Which equations have a missing part of 3?`, visual: ``, data: { options: ["4+?=7", "2+?=6", "3+?=6", "5+?=8"] }, correct: ["4+?=7", "3+?=6", "5+?=8"] }); }
+            for (let i = 1; i <= 5; i++) { let w=i+5, p1=i; lessonData.day3.practice.level2.push({ id: `d3_l2_q${10+i}`, type: 'text-box', prompt: `? + ${p1} = ${w}`, visual: ``, data: { size: 5 }, correct: 5 }); }
+            for (let i = 1; i <= 5; i++) { lessonData.day3.practice.level2.push({ id: `d3_l2_q${15+i}`, type: 'drag-drop-sort', prompt: 'Sort by missing part.', data: { items: ["2+?=5", "6+?=7", "4+?=7", "1+?=2"], categories: ["Missing Part is 3", "Missing Part is 1"] }, correct: { "Missing Part is 3": ["2+?=5", "4+?=7"], "Missing Part is 1": ["6+?=7", "1+?=2"] } }); }
+            // Level 3: 5 MC (complex), 5 Part A/B, 5 Constructed-Response, 5 Tech-Enhanced
+            for (let i = 1; i <= 5; i++) { lessonData.day3.practice.level3.push({ id: `d3_l3_q${i}`, type: 'mc', prompt: `I had 10 clues. I lost some. Now I have ${i+2}. How many did I lose?`, visual: ``, data: { options: [10-(i+2), i+2, 10] }, correct: 10-(i+2) }); }
+            for (let i = 1; i <= 5; i++) { lessonData.day3.practice.level3.push({ id: `d3_l3_q${5+i}`, type: 'mc', prompt: `Part A: Is the missing number in 4+?=9 greater than 4? <br> Part B: Which sentence explains why?`, visual: ``, data: { options: ["Yes, because the missing number is 5.", "No, because the missing number is 3.", "Yes, because 9 is a big number."] }, correct: "Yes, because the missing number is 5." }); }
+            for (let i = 1; i <= 5; i++) { lessonData.day3.practice.level3.push({ id: `d3_l3_q${10+i}`, type: 'text-box', prompt: `Explain how you can use counting up to solve ${i} + ? = ${i+3}.`, visual: ``, data: { size: 100 }, correct: `Start at ${i} and count up 3 times.` }); }
+            for (let i = 1; i <= 5; i++) { lessonData.day3.practice.level3.push({ id: `d3_l3_q${15+i}`, type: 'drag-drop-sort', prompt: 'Create a missing addend problem where the answer is 4.', data: { items: ["2", "3", "4", "5", "6", "7", "8", "9"], categories: ["Part", "Whole"] }, correct: { "Part": ["5"], "Whole": ["9"] } }); }
+
+            // Day 4: Fact Families
+            // Level 1: 10 MC, 5 T/F, 5 Drag-Match
+            for (let i = 1; i <= 10; i++) { let p1=i%5+1, p2=i%4+1, w=p1+p2; lessonData.day4.practice.level1.push({ id: `d4_l1_q${i}`, type: 'mc', prompt: `If ${p1} + ${p2} = ${w}, then...`, visual: ``, data: { options: [`${w} - ${p2} = ${p1}`, `${w} - 1 = ${w-1}`, `${p1} - ${p2} = ${p1-p2}`] }, correct: `${w} - ${p2} = ${p1}` }); }
+            for (let i = 1; i <= 5; i++) { let p1=i, p2=i+1, w=p1+p2; lessonData.day4.practice.level1.push({ id: `d4_l1_q${10+i}`, type: 'true-false', prompt: `True or False: ${p1}+${p2}=${w} and ${w}-${p1}=${p2} are related.`, visual: ``, data: { options: ["True", "False"] }, correct: "True" }); }
+            for (let i = 1; i <= 5; i++) { let p1=i, p2=i+2, w=p1+p2; lessonData.day4.practice.level1.push({ id: `d4_l1_q${15+i}`, type: 'drag-drop-match', prompt: 'Match related facts.', data: { draggables: [`${p1}+${p2}=${w}`, `${w-p1}=${p2}`], dropTargets: [`${w}-${p2}=${p1}`, `${p2}+${p1}=${w}`] }, correct: { [`${p1}+${p2}=${w}`]: `${p2}+${p1}=${w}`, [`${w-p1}=${p2}`]: `${w}-${p2}=${p1}` } }); }
+            // Level 2: 5 MC, 5 Multi-Select, 5 Text-Box, 5 Drag-Sort
+            for (let i = 1; i <= 5; i++) { let p1=i, p2=i+3, w=p1+p2; lessonData.day4.practice.level2.push({ id: `d4_l2_q${i}`, type: 'mc', prompt: `Which fact is NOT in the family of ${p1}, ${p2}, ${w}?`, visual: ``, data: { options: [`${p1}+${p2}=${w}`, `${w}-${p1}=${p2}`, `${w}+1=${w+1}`] }, correct: `${w}+1=${w+1}` }); }
+            for (let i = 1; i <= 5; i++) { let p1=i, p2=i+1, w=p1+p2; lessonData.day4.practice.level2.push({ id: `d4_l2_q${5+i}`, type: 'multi-select', prompt: `Which facts are in the ${p1}, ${p2}, ${w} fact family?`, visual: ``, data: { options: [`${p1}+${p2}=${w}`, `${w}+${p1}=${w+p1}`, `${w}-${p2}=${p1}`, `${p2}+${p1}=${w}`] }, correct: [`${p1}+${p2}=${w}`, `${w}-${p2}=${p1}`, `${p2}+${p1}=${w}`] }); }
+            for (let i = 1; i <= 5; i++) { let p1=i, p2=i+4, w=p1+p2; lessonData.day4.practice.level2.push({ id: `d4_l2_q${10+i}`, type: 'text-box', prompt: `Write a related addition fact for ${w} - ${p1} = ${p2}.`, visual: ``, data: { size: 10 }, correct: `${p2} + ${p1} = ${w}` }); }
+            for (let i = 1; i <= 5; i++) { lessonData.day4.practice.level2.push({ id: `d4_l2_q${15+i}`, type: 'drag-drop-sort', prompt: 'Sort the numbers into the correct fact family.', data: { items: ["3", "4", "5", "8", "9"], categories: ["3, 5, 8 Family", "4, 5, 9 Family"] }, correct: { "3, 5, 8 Family": ["3", "5", "8"], "4, 5, 9 Family": ["4", "5", "9"] } }); }
+            // Level 3: 5 MC (complex), 5 Part A/B, 5 Constructed-Response, 5 Tech-Enhanced
+            for (let i = 1; i <= 5; i++) { let p1=i, p2=i+1, w=p1+p2; lessonData.day4.practice.level3.push({ id: `d4_l3_q${i}`, type: 'mc', prompt: `I know ${w} - ${p1} = ${p2}. This helps me solve...`, visual: ``, data: { options: [`${p1} + ${p2} = ${w}`, `${w} + ${p1} = ${w+p1}`, `${p2} - ${p1} = 1`] }, correct: `${p1} + ${p2} = ${w}` }); }
+            for (let i = 1; i <= 5; i++) { let p1=i, p2=i+2, w=p1+p2; lessonData.day4.practice.level3.push({ id: `d4_l3_q${5+i}`, type: 'mc', prompt: `Part A: Is 8-3=5 in the same family as 3+5=8? <br> Part B: Why?`, visual: ``, data: { options: ["Yes, they use the same three numbers.", "No, one is addition and one is subtraction.", "I'm not sure."] }, correct: "Yes, they use the same three numbers." }); }
+            for (let i = 1; i <= 5; i++) { let p1=i, p2=i+3, w=p1+p2; lessonData.day4.practice.level3.push({ id: `d4_l3_q${10+i}`, type: 'text-box', prompt: `Explain why knowing ${p1}+${p2}=${w} helps you solve ${w}-?= ${p1}.`, visual: ``, data: { size: 100 }, correct: `Because they are related facts.` }); }
+            for (let i = 1; i <= 5; i++) { let p1=i, p2=i+4, w=p1+p2; lessonData.day4.practice.level3.push({ id: `d4_l3_q${15+i}`, type: 'drag-drop-sort', prompt: `Build the fact family for ${p1}, ${p2}, ${w}.`, data: { items: [`${p1}`, `${p2}`, `${w}`, "+", "-", "="], categories: ["Fact 1", "Fact 2"] }, correct: { "Fact 1": [`${p1}`, "+", `${p2}`, "=", `${w}`], "Fact 2": [`${w}`, "-", `${p1}`, "=", `${p2}`] } }); }
+        }
+
+        // --- SVG GENERATION ---
+        function generateVisualSVG(description) {
+            if (!description) return '';
+
+            const svgWidth = 400;
+            const svgHeight = 250;
+            let svgContent = '';
+            
+            const colors = { red: '#EF4444', blue: '#3B82F6', green: '#10B981', yellow: '#FBBF24', purple: '#8B5CF6', orange: '#F97316' };
+
+            const drawDots = (count, color, container) => {
+                let dots = '';
+                const radius = 12;
+                for (let i = 0; i < count; i++) {
+                    let cx = container.x + (i % 5) * (radius * 2.5) + radius * 1.5;
+                    let cy = container.y + Math.floor(i / 5) * (radius * 2.5) + radius * 1.5;
+                    dots += `<circle cx="${cx}" cy="${cy}" r="${radius}" fill="${colors[color] || '#4A5568'}" />`;
+                }
+                return dots;
+            };
+
+            if (description.includes('part-part-whole mat')) {
+                const whole = { x: 10, y: 10, width: 380, height: 120 };
+                const part1 = { x: 10, y: 140, width: 185, height: 100 };
+                const part2 = { x: 205, y: 140, width: 185, height: 100 };
+                svgContent += `
+                    <rect x="${whole.x}" y="${whole.y}" width="${whole.width}" height="${whole.height}" fill="#E2E8F0" rx="10" />
+                    <text x="${whole.x + 10}" y="${whole.y + 25}" font-size="16" font-weight="bold" fill="#4A5568">Whole</text>
+                    <rect x="${part1.x}" y="${part1.y}" width="${part1.width}" height="${part1.height}" fill="#F1F5F9" rx="10" />
+                    <text x="${part1.x + 10}" y="${part1.y + 25}" font-size="16" font-weight="bold" fill="#4A5568">Part</text>
+                    <rect x="${part2.x}" y="${part2.y}" width="${part2.width}" height="${part2.height}" fill="#F1F5F9" rx="10" />
+                    <text x="${part2.x + 10}" y="${part2.y + 25}" font-size="16" font-weight="bold" fill="#4A5568">Part</text>
+                `;
+
+                const dotMatches = description.matchAll(/(\d+)\s(\w+)\sdots\sin\sone\spart/g);
+                let partIndex = 0;
+                for (const match of dotMatches) {
+                    const count = parseInt(match[1]);
+                    const color = match[2];
+                    const container = partIndex === 0 ? 
+                        { ...part1, y: part1.y + 30 } : 
+                        { ...part2, y: part2.y + 30 };
+                    svgContent += drawDots(count, color, container);
+                    partIndex++;
+                }
+                if (description.includes('question mark')) {
+                     svgContent += `<text x="${part2.x + part2.width/2}" y="${part2.y + part2.height/2 + 20}" font-size="60" text-anchor="middle" fill="#4A5568">?</text>`;
+                }
+            }
+            else if (description.includes('frame')) {
+                const isTenFrame = description.includes('ten-frame');
+                const cols = 5;
+                const rows = isTenFrame ? 2 : 1;
+                const cellWidth = 60; const cellHeight = 60; const gap = 10;
+                
+                for(let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        svgContent += `<rect x="${c * (cellWidth + gap)}" y="${r * (cellHeight + gap)}" width="${cellWidth}" height="${cellHeight}" fill="none" stroke="#9CA3AF" stroke-width="2" rx="5" />`;
+                    }
+                }
+                
+                const dotMatches = description.matchAll(/(\d+)\s(\w+)\sdots/g);
+                let dotCount = 0;
+                for (const match of dotMatches) {
+                    const count = parseInt(match[1]);
+                    const color = match[2];
+                    for(let i=0; i < count; i++) {
+                        const r = Math.floor(dotCount / cols);
+                        const c = dotCount % cols;
+                        svgContent += `<circle cx="${c * (cellWidth + gap) + cellWidth/2}" cy="${r * (cellHeight + gap) + cellHeight/2}" r="20" fill="${colors[color] || '#4A5568'}" />`;
+                        dotCount++;
+                    }
+                }
+            }
+            else if (description.includes('number line')) {
+                const maxNum = parseInt(description.match(/to\s(\d+)/)?.[1] || 10);
+                const lineY = 150;
+                svgContent += `<line x1="20" y1="${lineY}" x2="380" y2="${lineY}" stroke="black" stroke-width="2" />`;
+                for(let i=0; i <= maxNum; i++) {
+                    const x = 20 + (i/maxNum) * 360;
+                    svgContent += `<line x1="${x}" y1="${lineY-10}" x2="${x}" y2="${lineY+10}" stroke="black" stroke-width="2" />`;
+                    svgContent += `<text x="${x}" y="${lineY+30}" text-anchor="middle">${i}</text>`;
+                }
+                const jumpMatches = description.matchAll(/jump\sfrom\s(\d+)\sto\s(\d+)/g);
+                let arcHeight = 80;
+                 for (const match of jumpMatches) {
+                    const start = parseInt(match[1]);
+                    const end = parseInt(match[2]);
+                    const x1 = 20 + (start/maxNum) * 360;
+                    const x2 = 20 + (end/maxNum) * 360;
+                    svgContent += `<path d="M ${x1} ${lineY-10} C ${x1} ${lineY-arcHeight}, ${x2} ${lineY-arcHeight}, ${x2} ${lineY-10}" stroke="${colors.blue}" stroke-width="3" fill="none" marker-end="url(#arrow)" />`;
+                    arcHeight -= 20; // Stagger arc heights for multiple jumps
+                }
+            }
+            else if (description.includes('boxes with pairs')) {
+                const pairs = description.match(/\((\d+,\d+)\)/g);
+                if (pairs) {
+                    pairs.forEach((pair, index) => {
+                        const text = pair.replace('(', '').replace(')', '');
+                        const x = 20 + index * 130;
+                        svgContent += `<rect x="${x}" y="80" width="100" height="80" fill="#F1F5F9" stroke="#9CA3AF" stroke-width="2" rx="10" />`;
+                        svgContent += `<text x="${x+50}" y="125" text-anchor="middle" font-size="24">${text}</text>`;
+                    });
+                }
+            }
+            else if (description.includes('image of')) {
+                 const emojiMap = { 'apples': '🍎', 'oranges': '🍊', 'cookies': '🍪', 'stars': '⭐' };
+                 let textContent = '';
+                 for (const [key, emoji] of Object.entries(emojiMap)) {
+                     const matches = description.matchAll(new RegExp(`(\\d+)\\s${key}`, 'g'));
+                     for (const match of matches) {
+                         textContent += `${emoji.repeat(parseInt(match[1]))} `;
+                     }
+                 }
+                 svgContent = `<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" style="font-size: 60px;">${textContent.trim()}</text>`;
+            }
+            
+            return `<svg viewBox="0 0 ${svgWidth} ${svgHeight}" width="100%" height="auto" class="max-w-md mx-auto">
+                <defs><marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="${colors.blue}" /></marker></defs>
+                ${svgContent}
+            </svg>`;
+        }
+
+
+        // --- RENDERING ---
+        function renderApp() {
+            renderTabs();
+            updateHeaderButtons();
+            if (appState.currentView === 'lesson') {
+                renderLessonView();
+            } else {
+                renderPracticeView();
+            }
+            saveProgress();
+        }
+
+        function updateHeaderButtons() {
+            if (appState.currentView === 'lesson') {
+                goToPracticeBtnHeader.classList.remove('hidden');
+                backToLessonBtn.classList.add('hidden');
+            } else { // practice view
+                goToPracticeBtnHeader.classList.add('hidden');
+                backToLessonBtn.classList.remove('hidden');
+            }
+        }
+
+        function renderTabs() {
+            tabNav.innerHTML = '';
+            Object.keys(lessonData).forEach(dayId => {
+                const day = lessonData[dayId];
+                if (!day) return;
+                const tab = document.createElement('button');
+                tab.dataset.day = dayId;
+                tab.textContent = `Day ${dayId.slice(-1)}`;
+                tab.className = `flex-1 text-center font-bold py-3 px-4 rounded-t-lg transition-colors duration-300 ${appState.currentDay === dayId ? 'tab-active' : 'tab-inactive'}`;
+                tabNav.appendChild(tab);
+            });
+        }
+
+        function renderLessonView() {
+            const dayId = appState.currentDay;
+            const dayData = lessonData[dayId];
+            if (!dayData || !dayData.lesson || dayData.lesson.length === 0) { 
+                mainContent.innerHTML = 'No data for this day.'; 
+                return; 
+            }
+            const currentSlideIndex = appState.progress[dayId].lessonSlide;
+            const slideData = dayData.lesson[currentSlideIndex];
+
+            if (!slideData) {
+                mainContent.innerHTML = `<h2 class="text-3xl font-bold text-slate-800 mb-2">Error</h2><p>Could not load this slide.</p>`;
+                return;
+            }
+
+            mainContent.innerHTML = `
+                <div class="slide active p-4" data-slide-id="${slideData.id}">
+                    <h2 class="text-3xl font-bold text-slate-800 mb-2">${slideData.title}</h2>
+                    <div class="prose max-w-none text-xl">
+                        ${generateSlideHTML(slideData)}
+                    </div>
+                </div>
+                ${renderNavigation(dayId, currentSlideIndex, dayData.lesson.length)}
+                ${renderProgressBar(dayId, currentSlideIndex, dayData.lesson.length)}
+            `;
+        }
+
+        function generateSlideHTML(slideData) {
+            let contentHTML = `<p>${slideData.content || slideData.prompt}</p>`;
+            if (slideData.visual) {
+                contentHTML += `<div class="my-4 p-4 flex justify-center items-center min-h-[250px]">${generateVisualSVG(slideData.visual)}</div>`;
+            }
+
+            const questionContainer = `<div class="question-container mt-6 p-6 border-2 border-slate-300 rounded-lg" data-question-id="${slideData.id}">
+                ${contentHTML}
+                <div class="options-container mt-4">
+                    ${generateOptionsHTML(slideData)}
+                </div>
+                <div class="controls mt-6 flex items-center gap-4">
+                    <button class="check-answer-btn bg-yellow-400 hover:bg-yellow-500 text-slate-800 font-bold py-2 px-6 rounded-lg text-lg transition-transform transform hover:scale-105">Solve the Case</button>
+                    <p class="feedback-message text-lg font-semibold"></p>
+                </div>
+            </div>`;
+
+            switch (slideData.type) {
+                case 'instruction': return contentHTML;
+                case 'mc':
+                case 'true-false':
+                case 'text-box':
+                case 'drag-drop-match':
+                case 'multi-select':
+                case 'drag-drop-sort':
+                    return questionContainer;
+                default: return '<p>Coming soon...</p>';
+            }
+        }
+
+        function generateOptionsHTML(slideData) {
+            const { type, data, id } = slideData;
+            if (!data) return ''; 
+            switch (type) {
+                case 'mc':
+                case 'true-false':
+                    return data.options.map(option => `
+                        <label class="block mb-2 text-xl p-3 border-2 rounded-lg hover:bg-yellow-100 cursor-pointer has-[:checked]:bg-yellow-200 has-[:checked]:border-yellow-400">
+                            <input type="radio" name="${id}" value="${option}" class="mr-3 accent-yellow-500">
+                            ${option}
+                        </label>
+                    `).join('');
+                case 'multi-select':
+                     return data.options.map(option => `
+                        <label class="block mb-2 text-xl p-3 border-2 rounded-lg hover:bg-yellow-100 cursor-pointer has-[:checked]:bg-yellow-200 has-[:checked]:border-yellow-400">
+                            <input type="checkbox" name="${id}" value="${option}" class="mr-3 accent-yellow-500">
+                            ${option}
+                        </label>
+                    `).join('');
+                case 'text-box':
+                    return `<input type="text" maxlength="${data.size}" class="text-xl p-3 border-2 border-slate-400 rounded-lg w-full md:w-1/2" placeholder="Type your answer...">`;
+                case 'drag-drop-match':
+                case 'drag-drop-sort':
+                     return `
+                        <div class="flex flex-col md:flex-row justify-around items-start md:items-center gap-8">
+                            <div class="flex flex-col gap-4">
+                                ${data.items ? data.items.map(item => `<div class="draggable bg-blue-200 p-4 rounded-lg text-center text-xl shadow-md" draggable="true" data-item="${item}">${item}</div>`).join('') : ''}
+                                ${data.draggables ? data.draggables.map(item => `<div class="draggable bg-blue-200 p-4 rounded-lg text-center text-xl shadow-md" draggable="true" data-item="${item}">${item}</div>`).join('') : ''}
+                            </div>
+                            <div class="flex flex-col gap-4">
+                                ${data.dropTargets ? data.dropTargets.map(item => `<div class="drop-target w-40 p-4 rounded-lg bg-slate-100 text-center text-xl" data-target="${item}">${item}</div>`).join('') : ''}
+                                ${data.categories ? data.categories.map(item => `<div><h3 class="text-xl font-bold text-center mb-2">${item}</h3><div class="drop-target w-48 p-4 rounded-lg bg-slate-100" data-target="${item}"></div></div>`).join('') : ''}
+                            </div>
+                        </div>`;
+                default: return '';
+            }
+        }
+
+        function renderNavigation(dayId, currentIndex, totalSlides) {
+            const prevDisabled = currentIndex === 0 ? 'disabled' : '';
+            const nextDisabled = currentIndex === totalSlides - 1 ? 'disabled' : '';
+            return `
+                <div class="mt-8 flex justify-between">
+                    <button class="nav-btn bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-6 rounded-lg disabled:bg-slate-300 disabled:cursor-not-allowed" data-direction="prev" ${prevDisabled}>&larr; Previous</button>
+                    <button class="nav-btn bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-6 rounded-lg disabled:bg-slate-300 disabled:cursor-not-allowed" data-direction="next" ${nextDisabled}>Next &rarr;</button>
+                </div>
+            `;
+        }
+        
+        function renderProgressBar(dayId, currentIndex, totalSlides) {
+            let footprintsHTML = '';
+            for (let i = 0; i < totalSlides; i++) {
+                const isCompleted = i < currentIndex;
+                footprintsHTML += `<span class="progress-footprint ${isCompleted ? 'completed' : ''}">👣</span>`;
+            }
+            return `<div class="mt-4 text-center" aria-label="Lesson progress">${footprintsHTML}</div>`;
+        }
+
+        function renderPracticeView() {
+            const dayId = appState.currentDay;
+            const level = appState.progress[dayId].practiceLevel;
+            const practiceData = lessonData[dayId].practice[level];
+
+            if(!practiceData || practiceData.length === 0) {
+                mainContent.innerHTML = `<h2 class="text-3xl font-bold text-slate-800 mb-4">Practice Center: Day ${dayId.slice(-1)}</h2><p>Practice questions for this level are coming soon!</p>`;
+                return;
+            }
+
+            mainContent.innerHTML = `
+                <h2 class="text-3xl font-bold text-slate-800 mb-4">Practice Center: Day ${dayId.slice(-1)} - Level ${level.slice(-1)}</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    ${practiceData.map(q => `<div class="slide active p-4 border rounded-lg shadow-md bg-white">${generateSlideHTML(q)}</div>`).join('')}
+                </div>
+            `;
+        }
+
+        // --- EVENT HANDLERS ---
+        function attachEventListeners() {
+            tabNav.addEventListener('click', handleTabClick);
+            mainContent.addEventListener('click', handleMainContentClick);
+            downloadWorkBtn.addEventListener('click', downloadWork);
+            downloadPdfBtn.addEventListener('click', downloadPDF);
+            
+            goToPracticeBtnHeader.addEventListener('click', () => {
+                appState.currentView = 'practice';
+                renderApp();
+            });
+
+            backToLessonBtn.addEventListener('click', () => {
+                appState.currentView = 'lesson';
+                const dayId = appState.currentDay;
+                appState.progress[dayId].lessonSlide = appState.progress[dayId].lastLessonSlide;
+                renderApp();
+            });
+
+            let draggedItem = null;
+            mainContent.addEventListener('dragstart', e => {
+                if (e.target.classList.contains('draggable')) {
+                    draggedItem = e.target;
+                    setTimeout(() => e.target.classList.add('opacity-50'), 0);
+                }
+            });
+            mainContent.addEventListener('dragend', e => {
+                if (draggedItem) {
+                    setTimeout(() => {
+                        draggedItem.classList.remove('opacity-50');
+                        draggedItem = null;
+                    }, 0);
+                }
+            });
+             mainContent.addEventListener('dragover', e => {
+                e.preventDefault();
+                const target = e.target.closest('.drop-target');
+                if (target) {
+                    target.classList.add('bg-yellow-100');
+                }
+             });
+             mainContent.addEventListener('dragleave', e => {
+                const target = e.target.closest('.drop-target');
+                if (target) {
+                    target.classList.remove('bg-yellow-100');
+                }
+             });
+             mainContent.addEventListener('drop', e => {
+                e.preventDefault();
+                const dropTarget = e.target.closest('.drop-target');
+                if (dropTarget) {
+                    dropTarget.classList.remove('bg-yellow-100');
+                    if (dropTarget.children.length > 0 && !dropTarget.closest('[data-type="drag-drop-sort"]')) {
+                        const parentContainer = draggedItem.parentElement;
+                        parentContainer.appendChild(dropTarget.children[0]);
+                         dropTarget.innerHTML = '';
+                    }
+                    dropTarget.appendChild(draggedItem);
+                }
+            });
+        }
+        
+        function handleTabClick(e) {
+            const button = e.target.closest('button');
+            if (button) {
+                appState.currentDay = button.dataset.day;
+                if (!appState.progress[appState.currentDay]) {
+                    appState.progress[appState.currentDay] = { lessonSlide: 0, lastLessonSlide: 0, practiceLevel: 'level1', answers: {} };
+                }
+                appState.progress[appState.currentDay].lessonSlide = 0;
+                appState.currentView = 'lesson';
+                renderApp();
+            }
+        }
+
+        function handleMainContentClick(e) {
+            const target = e.target;
+            if (target.classList.contains('nav-btn')) {
+                handleNavigation(target.dataset.direction);
+            } else if (target.classList.contains('check-answer-btn')) {
+                handleCheckAnswer(target);
+            }
+        }
+
+        function handleNavigation(direction) {
+            const dayId = appState.currentDay;
+            const progress = appState.progress[dayId];
+            const maxSlide = lessonData[dayId].lesson.length - 1;
+            
+            if (direction === 'next' && progress.lessonSlide < maxSlide) {
+                progress.lessonSlide++;
+            } else if (direction === 'prev' && progress.lessonSlide > 0) {
+                progress.lessonSlide--;
+            }
+            progress.lastLessonSlide = progress.lessonSlide;
+            renderApp();
+        }
+
+        function handleCheckAnswer(button) {
+            const container = button.closest('.question-container');
+            const questionId = container.dataset.questionId;
+            const dayId = appState.currentDay;
+            const allQuestions = [...lessonData[dayId].lesson, ...lessonData[dayId].practice.level1, ...lessonData[dayId].practice.level2, ...lessonData[dayId].practice.level3];
+            const questionData = allQuestions.find(q => q && q.id === questionId);
+            if (!questionData) return;
+
+            let userAnswer;
+            let isCorrect = false;
+
+            switch (questionData.type) {
+                case 'mc':
+                case 'true-false':
+                    const selectedRadio = container.querySelector('input[type="radio"]:checked');
+                    userAnswer = selectedRadio ? selectedRadio.value : null;
+                    isCorrect = userAnswer === String(questionData.correct);
+                    break;
+                case 'multi-select':
+                    const selectedChecks = Array.from(container.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+                    userAnswer = selectedChecks;
+                    isCorrect = selectedChecks.length === questionData.correct.length && selectedChecks.every(val => questionData.correct.includes(val));
+                    break;
+                case 'text-box':
+                    const input = container.querySelector('input[type="text"]');
+                    userAnswer = input.value.trim();
+                    isCorrect = userAnswer.toLowerCase() === String(questionData.correct).toLowerCase();
+                    break;
+                case 'drag-drop-match':
+                    const drops = container.querySelectorAll('.drop-target');
+                    userAnswer = {};
+                    let allMatched = true;
+                    drops.forEach(drop => {
+                        const droppedItem = drop.querySelector('.draggable');
+                        const targetVal = drop.dataset.target;
+                        if (droppedItem) {
+                            const itemVal = droppedItem.dataset.item;
+                            userAnswer[itemVal] = targetVal;
+                            if (questionData.correct[itemVal] !== targetVal) {
+                                allMatched = false;
+                            }
+                        } else {
+                            allMatched = false;
+                        }
+                    });
+                    isCorrect = allMatched && Object.keys(questionData.correct).length === Object.keys(userAnswer).length;
+                    break;
+                 case 'drag-drop-sort':
+                    const categories = container.querySelectorAll('.drop-target');
+                    userAnswer = {};
+                    let allSorted = true;
+                    categories.forEach(cat => {
+                        const categoryName = cat.dataset.target;
+                        const items = Array.from(cat.querySelectorAll('.draggable')).map(d => d.dataset.item);
+                        userAnswer[categoryName] = items;
+                        const correctItems = questionData.correct[categoryName];
+                        if (items.length !== correctItems.length || !items.every(item => correctItems.includes(item))) {
+                            allSorted = false;
+                        }
+                    });
+                    isCorrect = allSorted;
+                    break;
+            }
+
+            appState.progress[dayId].answers[questionId] = { answer: userAnswer, isCorrect };
+            
+            const feedbackEl = container.querySelector('.feedback-message');
+            container.classList.remove('feedback-correct', 'feedback-incorrect');
+            if (isCorrect) {
+                container.classList.add('feedback-correct');
+                feedbackEl.textContent = "Case Solved!";
+                feedbackEl.style.color = '#10B981';
+            } else {
+                container.classList.add('feedback-incorrect');
+                feedbackEl.textContent = "Not quite, re-examine the evidence.";
+                feedbackEl.style.color = '#EF4444';
+            }
+            saveProgress();
+        }
+
+        // --- DATA PERSISTENCE ---
+        function saveProgress() {
+            localStorage.setItem('numberDetectiveProgress', JSON.stringify(appState));
+        }
+
+        function loadProgress() {
+            const savedDataScript = document.getElementById('progress-data');
+            let savedData = null;
+
+            if (savedDataScript && savedDataScript.textContent.trim().length > 0) {
+                try {
+                    savedData = JSON.parse(savedDataScript.textContent);
+                } catch (e) { console.error("Could not parse progress data from script tag:", e); }
+            }
+            
+            if (!savedData) {
+                const savedProgress = localStorage.getItem('numberDetectiveProgress');
+                if (savedProgress) {
+                    try {
+                        savedData = JSON.parse(savedProgress);
+                    } catch (e) { console.error("Could not parse progress data from localStorage:", e); }
+                }
+            }
+
+            if (savedData) {
+                appState = savedData;
+            }
+        }
+
+        function downloadWork() {
+            saveProgress();
+            const stateString = JSON.stringify(appState);
+            const currentHtml = document.documentElement.outerHTML;
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(currentHtml, 'text/html');
+            const progressScriptTag = doc.getElementById('progress-data');
+            if (progressScriptTag) {
+                progressScriptTag.textContent = stateString;
+            }
+            const finalHtml = doc.documentElement.outerHTML;
+            const blob = new Blob([finalHtml], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'number-detective-progress.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        async function downloadPDF() {
+            const contentToPrint = document.getElementById('main-content');
+            const clone = contentToPrint.cloneNode(true);
+            clone.style.position = 'absolute';
+            clone.style.left = '-9999px';
+            clone.style.width = contentToPrint.offsetWidth + 'px';
+            document.body.appendChild(clone);
+
+            const dayId = appState.currentDay;
+            const answers = appState.progress[dayId].answers;
+
+            Object.keys(answers).forEach(questionId => {
+                const questionContainer = clone.querySelector(`[data-question-id="${questionId}"]`);
+                if (!questionContainer) return;
+
+                const answerData = answers[questionId];
+                const staticAnswer = document.createElement('div');
+                staticAnswer.className = 'mt-4 p-3 rounded-lg text-lg font-bold';
+                staticAnswer.innerHTML = `<strong>Your Answer:</strong> ${JSON.stringify(answerData.answer)}`;
+                
+                if (answerData.isCorrect) {
+                    staticAnswer.classList.add('bg-green-100', 'text-green-800');
+                } else {
+                    staticAnswer.classList.add('bg-red-100', 'text-red-800');
+                }
+
+                const optionsContainer = questionContainer.querySelector('.options-container');
+                const controls = questionContainer.querySelector('.controls');
+                if (optionsContainer) optionsContainer.remove();
+                if (controls) controls.remove();
+                
+                questionContainer.appendChild(staticAnswer);
+            });
+
+            clone.querySelectorAll('button, .nav-btn, .progress-footprint').forEach(el => el.style.display = 'none');
+
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const canvas = await html2canvas(clone, { scale: 2, useCORS: true });
+            const imgData = canvas.toDataURL('image/png');
+            
+            const imgProps = pdf.getImageProperties(imgData);
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+            let heightLeft = pdfHeight;
+            let position = 0;
+            
+            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+            heightLeft -= pdf.internal.pageSize.getHeight();
+
+            while (heightLeft >= 0) {
+                position = heightLeft - pdfHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+                heightLeft -= pdf.internal.pageSize.getHeight();
+            }
+
+            pdf.save('number-detective-report.pdf');
+            document.body.removeChild(clone);
+        }
+
+        // --- START THE APP ---
+        init();
+    });
+    </script>
+</body>
+</html>
