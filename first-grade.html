@@ -25,11 +25,19 @@
             </div>
 
     </div>
+         </main>
+    <div id="lesson-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button id="close-modal" class="close-button">&times;</button>
+            <iframe id="lesson-iframe" src="" title="Interactive Lesson"></iframe>
+        </div>
+    </div>
     <script>
         const lessonCards=document.querySelectorAll('.card:not(.placeholder)'),modal=document.getElementById('lesson-modal'),iframe=document.getElementById('lesson-iframe'),closeModalButton=document.getElementById('close-modal');function openModal(e){iframe.src=e,modal.style.display='flex'}function closeModal(){modal.style.display='none',iframe.src=''}lessonCards.forEach(e=>{e.addEventListener('click',()=>{const o=e.getAttribute('data-lesson-src');o&&openModal(o)})}),closeModalButton.addEventListener('click',closeModal),modal.addEventListener('click',e=>{e.target===modal&&closeModal()});
     </script>
 </body>
 </html>
+
 
 
 
