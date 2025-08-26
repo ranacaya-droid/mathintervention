@@ -20,7 +20,7 @@
         <div class="lesson-grid">
             <!-- Edit these 4 cards for your lessons -->
             <div class="card" data-lesson-src="CS/math-generator.html">
-                <div class="card-icon">🌍</div>
+                <div class="card-icon">💻</div>
                 <h3>Coding Mat Generator</h3>
                
             </div>
