@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Interactive Lesson: Numbers 1-5</title>
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Firebase compat (use these; do NOT use import ... from "firebase/app") -->
+  <!-- Firebase compat SDKs (drop-in, no ES modules) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
   <style>
-    body { font-family:'Comic Sans MS','Chalkboard SE','Marker Felt',sans-serif; user-select:none; }
+    body { font-family: 'Comic Sans MS','Chalkboard SE','Marker Felt',sans-serif; user-select:none; }
     .slide { display:none; }
     .active-slide { display:block; }
     .active-tab { background-color:#10b981; color:white; }
@@ -20,7 +20,7 @@
     .draggable { cursor:grab; touch-action:none; }
     .dragging { opacity:.4; }
     .ghost-drag { position:absolute; z-index:1000; pointer-events:none; opacity:.8; }
-    .drop-target { transition:background-color .2s ease, transform .2s ease; }
+    .drop-target { transition: background-color .2s ease, transform .2s ease; }
     .drop-target.over { background-color:#a7f3d0; transform:scale(1.05); }
     .feedback-modal { display:none; }
     .feedback-modal.show { display:flex; }
@@ -37,9 +37,10 @@
 </head>
 <body class="bg-sky-100 text-gray-800 flex flex-col h-screen overflow-hidden">
 
-  <!-- Header -->
+  <!-- Header with Tabs, Role/Room badge, Download Button -->
   <header class="bg-white shadow-md p-2 flex justify-between items-center">
     <nav id="day-tabs" class="flex space-x-2 overflow-x-auto"></nav>
+
     <div class="flex items-center gap-2">
       <span id="role-room-badge" class="badge px-2 py-1 rounded-full bg-gray-200 text-gray-700"></span>
       <button id="download-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg button-pop flex-shrink-0">
@@ -48,12 +49,12 @@
     </div>
   </header>
 
-  <!-- Main -->
+  <!-- Main Content Area -->
   <main id="main-content" class="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
     <div id="lesson-container" class="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg p-6"></div>
   </main>
 
-  <!-- Footer -->
+  <!-- Fixed Navigation Footer -->
   <footer class="bg-white shadow-t-md p-4 flex justify-between items-center border-t">
     <button id="prev-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-6 rounded-lg button-pop">Back</button>
     <div id="slide-counter" class="text-lg font-bold text-center"></div>
@@ -69,12 +70,12 @@
     </div>
   </div>
 
-  <!-- Confetti -->
+  <!-- Confetti Container -->
   <div id="confetti-container" class="absolute inset-0 pointer-events-none overflow-hidden z-40"></div>
 
-  <!-- ✅ One correct Firebase config (YOUR real values) -->
+  <!-- 🔑 FIREBASE CONFIG (real values already inserted) -->
   <script>
-    // Use YOUR actual config here (I filled with the one you pasted previously)
+    // We use compat SDK; no ES module imports needed.
     window.__FIREBASE_CONFIG__ = {
       apiKey: "AIzaSyCXS6CNUDQ323H002lxwjeiEEKwXP4tVLU",
       authDomain: "lesson-sync-a223a.firebaseapp.com",
@@ -85,39 +86,39 @@
     };
   </script>
 
-  <!-- ✅ Robust role/room parser (single source of truth) -->
+  <!-- Robust Role/Room Parser -->
   <script>
     function getRoleAndRoom() {
       const url = new URL(window.location.href);
       const qs = new URLSearchParams(url.search);
+
+      // teacher flag can be ?teacher=1 / true / yes / (or #teacher)
       let teacherRaw = qs.get('teacher') ?? (url.hash.includes('teacher') ? '1' : null);
       let isTeacher = false;
       if (teacherRaw !== null) {
         const v = String(teacherRaw).toLowerCase();
         isTeacher = (v === '' || v === '1' || v === 'true' || v === 'yes' || v === 'y');
       }
-      let room = qs.get('room') || (url.hash.match(/room=([\w-]+)/)?.[1]) || 'default';
+
+      // room via ?room=... or #room=...
+      let room =
+        qs.get('room') ||
+        (url.hash.match(/room=([\w-]+)/)?.[1]) ||
+        'default';
+
       return { isTeacher, room };
     }
+
     const { isTeacher: IS_TEACHER, room: ROOM_ID } = getRoleAndRoom();
     console.log('[sync] href=', location.href, 'IS_TEACHER=', IS_TEACHER, 'ROOM_ID=', ROOM_ID);
   </script>
 
-  <!-- 🌟 Your App + Sync (fixed) -->
+  <!-- ========================== APP + LESSON ========================== -->
   <script>
-    /* ------------------------------------------------------------------
-       1) PASTE your full lesson code below (lessonData, renderers, DnD, etc.)
-       2) DO NOT re-add any lines that say:
-            const params = new URLSearchParams(...);
-            const IS_TEACHER = ...;
-            const ROOM_ID = ...;
-          (We already defined IS_TEACHER and ROOM_ID above.)
-       ------------------------------------------------------------------ */
-
-    // ⬇️ paste your existing lesson code starting with:
-    const lessonData = {
+/* ----------------------------- LESSON DATA ----------------------------- */
+const lessonData = {
     days: [
-        // DAY 1: FULLY POPULATED
+        // DAY 1
         {
             title: "Day 1: 🐿️ 1 & 2",
             slides: [
@@ -162,21 +163,18 @@
                 { type: 'multiple-choice', title: 'Practice 20/20', question: 'How many are there?', group: '📌📌', options: [{content: '1', correct: false}, {content: '2', correct: true}], isPractice: true },
             ]
         },
-        // DAY 2: FULLY POPULATED
+        // DAY 2
         {
             title: "Day 2: 🐻 No. 3",
             slides: [
                 { type: 'title', title: "The Trio of Number 3!", text: "A friendly bear is here to help us learn the number 3!" },
                 { type: 'hook', title: 'Hook: Three Little Pigs', text: 'In the story, how many pigs were there? Let\'s count them: 1, 2, 3!' },
                 { type: 'instruction', title: 'I Do: Meet Number 3', text: 'This is 3. It has two big curves. Let\'s trace it in the air: around and around again!' },
-                // I Do (3 activities)
                 { type: 'drag-drop-sort', title: 'I Do 1/3: Three Eggs', instruction: 'Each bird needs one egg. I will drag ONE, TWO, THREE eggs.', items: [{id: 'd2ido1i1', content: '🥚', count: 1}, {id: 'd2ido1i2', content: '🥚', count: 1}, {id: 'd2ido1i3', content: '🥚', count: 1}], targets: [{id: 'd2ido1t1', label: '🐦', accepts: 1}, {id: 'd2ido1t2', label: '🐦', accepts: 1}, {id: 'd2ido1t3', label: '🐦', accepts: 1}]},
                 { type: 'multiple-choice', title: 'I Do 2/3: Find the Group', question: 'I need to find the group of three. One, two, three hearts! This is it!', options: [{content: '⭐', correct: false}, {content: '⭐⭐', correct: false}, {content: '❤️❤️❤️', correct: true}]},
                 { type: 'drag-drop-sort', title: 'I Do 3/3: Sorting Numbers', instruction: 'This group has three ladybugs. It goes in the "3" box.', items: [{id: 'd2ido3i1', content: '🐞🐞🐞', count: 3}], targets: [{id: 'd2ido3t1', label: '1', accepts: 1}, {id: 'd2ido3t2', label: '2', accepts: 2}, {id: 'd2ido3t3', label: '3', accepts: 3}]},
-                // We Do (10 activities)
                 ...Array(5).fill(0).map((_, i) => ({ type: 'multiple-choice', title: `We Do ${i+1}/10: Find the Number`, question: 'Can you find the number 3?', options: [{content: '1', correct: false}, {content: '2', correct: false}, {content: '3', correct: true}]})),
                 ...Array(5).fill(0).map((_, i) => ({ type: 'multiple-choice', title: `We Do ${i+6}/10: Find the Group`, question: 'Which group has 3 berries?', options: [{content: '🍓🍓', correct: false}, {content: '🍓🍓🍓', correct: true}]})),
-                // You Do (5 activities)
                 { type: 'drag-drop-sort', title: 'You Do 1/5: Train Cars', instruction: 'Drag the correct number of passengers to each car.', items: [{id: 'd2ydo1i1', content: '🙂', count: 1}, {id: 'd2ydo1i2', content: '🙂🙂', count: 2}, {id: 'd2ydo1i3', content: '🙂🙂🙂', count: 3}], targets: [{id: 'd2ydo1t1', label: 'Car 1', accepts: 1}, {id: 'd2ydo1t2', label: 'Car 2', accepts: 2}, {id: 'd2ydo1t3', label: 'Car 3', accepts: 3}], isPractice: true},
                 { type: 'multiple-choice', title: 'You Do 2/5: Select the Group', question: 'See the number 3. Which group has 3?', options: [{content: '🚗🚗', correct: false}, {content: '🚗🚗🚗', correct: true}, {content: '🚗', correct: false}], isPractice: true},
                 { type: 'multiple-choice', title: 'You Do 3/5: Select the Numeral', question: 'How many are there?', group: '🚦🚦🚦', options: [{content: '1', correct: false}, {content: '2', correct: false}, {content: '3', correct: true}], isPractice: true},
@@ -189,21 +187,18 @@
                 ...Array(10).fill(0).map((_, i) => ({ type: 'short-answer', title: `Practice ${i+11}/20`, question: 'How many honey pots?', itemContent: '🍯🍯🍯', correctAnswer: '3', isPractice: true }))
             ]
         },
-        // DAY 3: FULLY POPULATED
+        // DAY 3
         {
             title: "Day 3: 🐛 4 & 5",
             slides: [
                 { type: 'title', title: "Fantastic Fours and Fives!", text: "A cute caterpillar will teach us about numbers 4 and 5!" },
                 { type: 'hook', title: 'Hook: Fingers and Wheels', text: 'A car has 4 wheels. Your hand has 5 fingers! Let\'s count them!' },
                 { type: 'instruction', title: 'I Do: Meet 4 and 5', text: 'This is 4. Down, across, and a line from top to bottom. This is 5. He has a hat, a neck, and a big round belly!' },
-                // I Do (3 activities)
                 { type: 'drag-drop-sort', title: 'I Do 1/3: Five Fingernails', instruction: 'This hand needs five fingernails. Let\'s count them as we drag them on.', items: Array(5).fill(0).map((_,i)=>({id:`d3ido1i${i}`, content:'💅', count:1})), targets: Array(5).fill(0).map((_,i)=>({id:`d3ido1t${i}`, label:'핑거', accepts:1}))},
                 { type: 'drag-drop-sequence', title: 'I Do 2/3: Number Order', instruction: 'These numbers are mixed up! I will put them in the right order: 1, 2, 3, 4, 5.', items: [{id: 'd3ido2i1', content: '3'}, {id: 'd3ido2i2', content: '1'}, {id: 'd3ido2i3', content: '5'}, {id: 'd3ido2i4', content: '2'}, {id: 'd3ido2i5', content: '4'}], correctSequence: ['1', '2', '3', '4', '5']},
                 { type: 'multiple-choice', title: 'I Do 3/3: Find the Group of 4', question: 'I need to find the group of four. I\'ll count carefully... one, two, three, four! This is it!', options: [{content: '🔴🔴🔴', correct: false}, {content: '🔵🔵🔵🔵', correct: true}, {content: '🟢🟢🟢🟢🟢', correct: false}]},
-                // We Do (10 activities)
                 ...Array(5).fill(0).map((_, i) => ({ type: 'multiple-choice', title: `We Do ${i+1}/10: Build a Caterpillar`, question: 'The caterpillar needs 4 body segments. Which group has 4?', options: [{content: '🐛', correct: false}, {content: '🐛🐛🐛', correct: false}, {content: '🐛🐛🐛🐛', correct: true}]})),
                 ...Array(5).fill(0).map((_, i) => ({ type: 'multiple-choice', title: `We Do ${i+6}/10: Hungry Caterpillar`, question: 'Click on the leaf that has 5 holes.', options: [{content: '🍃(3 holes)', correct: false}, {content: '🍃(5 holes)', correct: true}]})),
-                // You Do (5 activities)
                 { type: 'drag-drop-sort', title: 'You Do 1/5: Wheels on the Car', instruction: 'Put 4 wheels on the car.', items: Array(4).fill(0).map((_,i)=>({id:`d3ydo1i${i}`, content:'⚫', count:1})), targets: [{id: 'd3ydo1t1', label: '🚗', accepts: 1},{id: 'd3ydo1t2', label: '', accepts: 1},{id: 'd3ydo1t3', label: '', accepts: 1},{id: 'd3ydo1t4', label: '', accepts: 1}], isPractice: true},
                 { type: 'drag-drop-sort', title: 'You Do 2/5: Sort 4 and 5', instruction: 'Sort the groups of objects into the correct bins.', items: [{id: 'd3ydo2i1', content: '⭐'.repeat(4), count: 4}, {id: 'd3ydo2i2', content: '⭐'.repeat(5), count: 5}], targets: [{id: 'd3ydo2t1', label: '4', accepts: 4}, {id: 'd3ydo2t2', label: '5', accepts: 5}], isPractice: true},
                 { type: 'multiple-choice', title: 'You Do 3/5: Select the Group', question: 'Find the group that matches the number 5.', options: [{content: '🌸'.repeat(3), correct: false}, {content: '🌸'.repeat(4), correct: false}, {content: '🌸'.repeat(5), correct: true}], isPractice: true},
@@ -216,21 +211,18 @@
                  ...Array(10).fill(0).map((_, i) => ({ type: 'multiple-choice', title: `Practice ${i+11}/20`, question: 'Which group has 4?', options: [{content: '🦋🦋', correct: false}, {content: '🦋🦋🦋🦋', correct: true}, {content: '🦋🦋🦋', correct: false}], isPractice: true }))
             ]
         },
-        // DAY 4: FULLY POPULATED
+        // DAY 4
         {
             title: "Day 4: 🦊 Review",
             slides: [
                 { type: 'title', title: "Number Heroes Review!", text: "Let's show the clever fox everything we've learned about numbers 1-5!" },
                 { type: 'hook', title: 'Hook: Number Flash!', text: 'Let\'s play a game. I\'ll show a number, you shout it out! Ready?' },
                 { type: 'instruction', title: 'I Do: How to Write', text: 'Watch me write the numbers. Remember the rhymes! "Number 1 is like a stick..."' },
-                // I Do (3 activities)
                 { type: 'drawing', title: 'I Do 1/3: Writing the Number 3', instruction: 'I will draw the number 3. Around and around again!'},
                 { type: 'drag-drop-sequence', title: 'I Do 2/3: Train Order', instruction: 'A train needs its cars in order. I will put them from 1 to 5.', items: [{id: 'd4ido2i1', content: '3'}, {id: 'd4ido2i2', content: '1'}, {id: 'd4ido2i3', content: '5'}, {id: 'd4ido2i4', content: '2'}, {id: 'd4ido2i5', content: '4'}], correctSequence: ['1', '2', '3', '4', '5']},
                 { type: 'drag-drop-sort', title: 'I Do 3/3: Matching', instruction: 'I need to connect the number to the right group. The number 1 matches the one sun.', items: [{id: 'd4ido3i1', content: '1', count: 1}], targets: [{id: 'd4ido3t1', label: '☀️', accepts: 1}]},
-                // We Do (10 activities)
                 ...Array(5).fill(0).map((_, i) => ({ type: 'drawing', title: `We Do ${i+1}/10: Let's Write`, instruction: `Let's practice writing the number ${i+1} together.`})),
                 ...Array(5).fill(0).map((_, i) => ({ type: 'multiple-choice', title: `We Do ${i+6}/10: Quick Count!`, question: `How many dots?`, group: '⚫'.repeat(i+1), options: [{content: `${i+1}`, correct: true}, {content: `${i+2}`, correct: false}]})),
-                // You Do (5 activities)
                 { type: 'drawing', title: 'You Do 1/5: Practice Writing 4', instruction: 'Your turn! Practice writing the number 4.', isPractice: true},
                 { type: 'drawing', title: 'You Do 2/5: Practice Writing 5', instruction: 'Now try the number 5.', isPractice: true},
                 { type: 'drag-drop-sort', title: 'You Do 3/5: Match All Dots', instruction: 'Match all five numerals to their dot patterns.', items: [{id: 'd4ydo3i1', content: '1', count: 1}, {id: 'd4ydo3i2', content: '2', count: 2}, {id: 'd4ydo3i3', content: '3', count: 3}, {id: 'd4ydo3i4', content: '4', count: 4}, {id: 'd4ydo3i5', content: '5', count: 5}], targets: [{id: 'd4ydo3t1', label: '⚫', accepts: 1}, {id: 'd4ydo3t2', label: '⚫⚫', accepts: 2}, {id: 'd4ydo3t3', label: '⚫⚫⚫', accepts: 3}, {id: 'd4ydo3t4', label: '⚫⚫⚫⚫', accepts: 4}, {id: 'd4ydo3t5', label: '⚫⚫⚫⚫⚫', accepts: 5}], isPractice: true},
@@ -260,14 +252,14 @@
     ]
 };
 
-// --- APPLICATION STATE ---
+/* --------------------------- APPLICATION STATE --------------------------- */
 let currentDay = 0;
 let currentSlide = 0;
-let progressData = {}; // All student work is stored here
+let progressData = {};
 let isPracticeCenter = false;
 let practiceProgress = {};
 
-// --- DOM ELEMENTS ---
+/* ------------------------------- DOM HOOKS ------------------------------- */
 const lessonContainer = document.getElementById('lesson-container');
 const dayTabsContainer = document.getElementById('day-tabs');
 const prevBtn = document.getElementById('prev-btn');
@@ -278,849 +270,793 @@ const feedbackModal = document.getElementById('feedback-modal');
 const feedbackIcon = document.getElementById('feedback-icon');
 const feedbackText = document.getElementById('feedback-text');
 const feedbackCloseBtn = document.getElementById('feedback-close-btn');
+const badge = document.getElementById('role-room-badge');
 
-// --- INITIALIZATION ---
-document.addEventListener('DOMContentLoaded', () => {
-    // Check for progress data injected by a downloaded file
-    if (typeof loadedProgress !== 'undefined') {
-        progressData = loadedProgress;
-    } else {
-        // Otherwise, try to load from localStorage
-        const savedProgress = localStorage.getItem('kindergartenNumbersProgress');
-        if (savedProgress) {
-            progressData = JSON.parse(savedProgress);
-        }
-    }
-    
-    // Initialize practice progress from saved data
-    for (const key in progressData) {
-        if (key.startsWith('p-') && progressData[key].completed) {
-            const dayIndex = parseInt(key.match(/d(\d+)/)[1]);
-            practiceProgress[dayIndex] = (practiceProgress[dayIndex] || 0) + 1;
-        }
-    }
+/* -------------------------------- INIT -------------------------------- */
+document.addEventListener('DOMContentLoaded', async () => {
+  // Show role/room badge
+  badge.textContent = `${IS_TEACHER ? 'Teacher' : 'Student'} • room: ${ROOM_ID}`;
 
-    initTabs();
-    showSlide(currentDay, currentSlide);
-    
-    // Event Listeners
-    prevBtn.addEventListener('click', navigatePrev);
-    nextBtn.addEventListener('click', navigateNext);
-    downloadBtn.addEventListener('click', downloadWork);
-    feedbackCloseBtn.addEventListener('click', hideFeedback);
+  // Restore progress
+  if (typeof loadedProgress !== 'undefined') {
+    progressData = loadedProgress;
+  } else {
+    const savedProgress = localStorage.getItem('kindergartenNumbersProgress');
+    if (savedProgress) progressData = JSON.parse(savedProgress);
+  }
+  for (const key in progressData) {
+    if (key.startsWith('p-') && progressData[key].completed) {
+      const dayIndex = parseInt(key.match(/d(\d+)/)[1]);
+      practiceProgress[dayIndex] = (practiceProgress[dayIndex] || 0) + 1;
+    }
+  }
+
+  initTabs();
+  showSlide(currentDay, currentSlide);
+
+  prevBtn.addEventListener('click', () => { navigatePrev(); syncPush(); });
+  nextBtn.addEventListener('click', () => { navigateNext(); syncPush(); });
+  downloadBtn.addEventListener('click', downloadWork);
+  feedbackCloseBtn.addEventListener('click', hideFeedback);
+
+  // Disable navigation on student devices (they still interact on slide)
+  if (!IS_TEACHER) {
+    prevBtn.classList.add('disabled-nav');
+    nextBtn.classList.add('disabled-nav');
+  }
+
+  // Start Firebase sync
+  await initFirebaseSync();
 });
 
-
-// --- NAVIGATION ---
+/* ------------------------------ NAVIGATION ------------------------------ */
 function initTabs() {
-    dayTabsContainer.innerHTML = '';
-    lessonData.days.forEach((day, index) => {
-        const tab = document.createElement('button');
-        tab.textContent = day.title;
-        tab.className = `tab font-bold py-2 px-4 rounded-lg flex-shrink-0 ${index === currentDay ? 'active-tab' : 'bg-gray-200 hover:bg-gray-300'}`;
-        tab.onclick = () => {
-            isPracticeCenter = false;
-            currentDay = index;
-            currentSlide = 0;
-            initTabs(); // Re-render tabs to update active state
-            showSlide(currentDay, currentSlide);
-        };
-        dayTabsContainer.appendChild(tab);
-    });
+  dayTabsContainer.innerHTML = '';
+  lessonData.days.forEach((day, index) => {
+    const tab = document.createElement('button');
+    tab.textContent = day.title;
+    tab.className = `tab font-bold py-2 px-4 rounded-lg flex-shrink-0 ${index === currentDay ? 'active-tab' : 'bg-gray-200 hover:bg-gray-300'}`;
+    tab.onclick = () => {
+      if (!IS_TEACHER) return; // students can't change day
+      isPracticeCenter = false;
+      currentDay = index;
+      currentSlide = 0;
+      initTabs();
+      showSlide(currentDay, currentSlide);
+      syncPush();
+    };
+    dayTabsContainer.appendChild(tab);
+  });
 }
 
 function navigatePrev() {
-    if (currentSlide > 0) {
-        currentSlide--;
-        showSlide(currentDay, currentSlide);
-    }
+  const slideSet = isPracticeCenter ? lessonData.days[currentDay].practiceCenter : lessonData.days[currentDay].slides;
+  if (currentSlide > 0) { currentSlide--; showSlide(currentDay, currentSlide); }
 }
-
 function navigateNext() {
-    const slideSet = isPracticeCenter ? lessonData.days[currentDay].practiceCenter : lessonData.days[currentDay].slides;
-    if (currentSlide < slideSet.length - 1) {
-        currentSlide++;
-        showSlide(currentDay, currentSlide);
-    }
+  const slideSet = isPracticeCenter ? lessonData.days[currentDay].practiceCenter : lessonData.days[currentDay].slides;
+  if (currentSlide < slideSet.length - 1) { currentSlide++; showSlide(currentDay, currentSlide); }
 }
-
 function goToPracticeCenter(dayIndex) {
-    isPracticeCenter = true;
-    currentDay = dayIndex;
-    currentSlide = 0;
-    showSlide(currentDay, currentSlide);
+  if (!IS_TEACHER) return; // students can’t switch mode themselves
+  isPracticeCenter = true;
+  currentDay = dayIndex;
+  currentSlide = 0;
+  showSlide(currentDay, currentSlide);
+  syncPush();
 }
 
+/* -------------------------------- RENDER -------------------------------- */
 
-// --- RENDERING ---
 function showSlide(dayIndex, slideIndex) {
-    const slideSet = isPracticeCenter ? lessonData.days[dayIndex].practiceCenter : lessonData.days[dayIndex].slides;
-    const slideData = slideSet[slideIndex];
-    
-    lessonContainer.innerHTML = `<div class="slide-content"></div>`;
-    const contentWrapper = lessonContainer.querySelector('.slide-content');
+  const slideSet = isPracticeCenter ? lessonData.days[dayIndex].practiceCenter : lessonData.days[dayIndex].slides;
+  const slideData = slideSet[slideIndex];
+  lessonContainer.innerHTML = `<div class="slide-content"></div>`;
+  const contentWrapper = lessonContainer.querySelector('.slide-content');
 
-    let html = '';
-    
-    if (isPracticeCenter) {
-        html += renderPracticeHeader(dayIndex, slideIndex);
-    }
+  let html = '';
+  if (isPracticeCenter) html += renderPracticeHeader(dayIndex, slideIndex);
 
-    switch (slideData.type) {
-        case 'title':
-            html += `<h1 class="text-4xl font-bold text-center text-emerald-600 mb-4">${slideData.title}</h1><p class="text-xl text-center">${slideData.text}</p>`;
-            break;
-        case 'hook':
-        case 'instruction':
-            html += `<h2 class="text-3xl font-bold text-blue-600 mb-4">${slideData.title}</h2><p class="text-lg">${slideData.text}</p>`;
-            break;
-        case 'drag-drop-sort':
-            html += renderDragDropSort(slideData);
-            break;
-        case 'multiple-choice':
-            html += renderMultipleChoice(slideData);
-            break;
-        case 'true-false':
-            html += renderTrueFalse(slideData);
-            break;
-        case 'short-answer':
-            html += renderShortAnswer(slideData);
-            break;
-        case 'drag-drop-sequence':
-            html += renderDragDropSequence(slideData);
-            break;
-        case 'drawing':
-            html += renderDrawingCanvas(slideData);
-            break;
-        case 'practice-center-gate':
-            html += `<div class="text-center"><h2 class="text-3xl font-bold mb-6">Great work today!</h2><button onclick="goToPracticeCenter(${slideData.dayIndex})" class="bg-yellow-400 hover:bg-yellow-500 text-gray-800 font-bold py-4 px-8 rounded-full text-2xl button-pop">Let's Practice!</button></div>`;
-            break;
-    }
-    
-    contentWrapper.innerHTML = html;
-    
-    // Activate dynamic elements after they are in the DOM
-    activateSlide(slideData, dayIndex, slideIndex);
-    updateNavButtons();
-    updateSlideCounter();
-}
+  switch (slideData.type) {
+    case 'title':
+      html += `<h1 class="text-4xl font-bold text-center text-emerald-600 mb-4">${slideData.title}</h1><p class="text-xl text-center">${slideData.text}</p>`;
+      break;
+    case 'hook':
+    case 'instruction':
+      html += `<h2 class="text-3xl font-bold text-blue-600 mb-4">${slideData.title}</h2><p class="text-lg">${slideData.text}</p>`;
+      break;
+    case 'drag-drop-sort':
+      html += renderDragDropSort(slideData);
+      break;
+    case 'multiple-choice':
+      html += renderMultipleChoice(slideData);
+      break;
+    case 'true-false':
+      html += renderTrueFalse(slideData);
+      break;
+    case 'short-answer':
+      html += renderShortAnswer(slideData);
+      break;
+    case 'drag-drop-sequence':
+      html += renderDragDropSequence(slideData);
+      break;
+    case 'drawing':
+      html += renderDrawingCanvas(slideData);
+      break;
+    case 'practice-center-gate':
+      html += `
+        <div class="text-center">
+          <h2 class="text-3xl font-bold mb-6">Great work today!</h2>
+          <button
+            ${IS_TEACHER ? '' : 'disabled'}
+            class="bg-yellow-400 ${IS_TEACHER ? 'hover:bg-yellow-500' : 'opacity-50 cursor-not-allowed'} text-gray-800 font-bold py-4 px-8 rounded-full text-2xl button-pop"
+            onclick="goToPracticeCenter(${slideData.dayIndex})"
+          >
+            Let's Practice!
+          </button>
+        </div>`;
+      break;
+  }
+  contentWrapper.innerHTML = html;
 
-function activateSlide(slideData, dayIndex, slideIndex) {
-    const progressKey = getProgressKey(dayIndex, slideIndex);
-    
-    switch (slideData.type) {
-        case 'drag-drop-sort':
-        case 'drag-drop-sequence':
-            initDragAndDrop(slideData, progressKey);
-            break;
-        case 'short-answer':
-            initShortAnswer(slideData, progressKey);
-            break;
-        case 'drawing':
-            initDrawingCanvas(slideData, progressKey);
-            break;
-        case 'multiple-choice':
-        case 'true-false':
-             // Restore checked state for MC/TF
-            const savedAnswer = progressData[progressKey]?.answer;
-            if (savedAnswer !== undefined) {
-                const radio = document.querySelector(`input[name="mc-option"][value="${savedAnswer}"]`);
-                if(radio) radio.checked = true;
-            }
-            break;
-    }
+  activateSlide(slideData, dayIndex, slideIndex);
+  updateNavButtons();
+  updateSlideCounter();
 }
 
 function renderPracticeHeader(dayIndex, slideIndex) {
-    const total = lessonData.days[dayIndex].practiceCenter.length;
-    const correctCount = practiceProgress[dayIndex] || 0;
-    
-    let berriesHtml = '';
-    for (let i = 0; i < total; i++) {
-        const isCollected = i < correctCount;
-        berriesHtml += `<div class="w-6 h-6 rounded-full ${isCollected ? 'bg-red-500' : 'bg-gray-300'} border-2 border-white"></div>`;
-    }
+  const total = lessonData.days[dayIndex].practiceCenter.length;
+  const correctCount = practiceProgress[dayIndex] || 0;
 
-    return `
-        <div class="mb-6">
-            <h2 class="text-2xl font-bold text-center">Practice Center</h2>
-            <p class="text-center text-gray-600">Question ${slideIndex + 1} of ${total}</p>
-            <div class="flex justify-center items-center space-x-1 mt-2 p-2 bg-green-200 rounded-full flex-wrap">${berriesHtml}</div>
-        </div>
-    `;
+  let berriesHtml = '';
+  for (let i = 0; i < total; i++) {
+    const isCollected = i < correctCount;
+    berriesHtml += `<div class="w-6 h-6 rounded-full ${isCollected ? 'bg-red-500' : 'bg-gray-300'} border-2 border-white"></div>`;
+  }
+
+  return `
+    <div class="mb-6">
+      <h2 class="text-2xl font-bold text-center">Practice Center</h2>
+      <p class="text-center text-gray-600">Question ${slideIndex + 1} of ${total}</p>
+      <div class="flex justify-center items-center space-x-1 mt-2 p-2 bg-green-200 rounded-full flex-wrap">${berriesHtml}</div>
+    </div>
+  `;
 }
 
+/* ---------------------- INTERACTIVE RENDERERS ---------------------- */
 
-// --- INTERACTIVE ELEMENT RENDERERS & INITIALIZERS ---
-
-// Drag and Drop (Unified for Mouse and Touch)
 function renderDragDropSort(slideData) {
-    const itemsHtml = slideData.items.map(item => `
-        <div id="${item.id}" class="draggable text-5xl p-4 bg-yellow-200 rounded-lg" draggable="true" data-count="${item.count}">${item.content}</div>
-    `).join('');
-    const targetsHtml = slideData.targets.map(target => `
-        <div class="drop-target w-32 h-32 border-4 border-dashed border-gray-400 rounded-lg flex justify-center items-center" data-accepts="${target.accepts}">
-            <span class="text-6xl font-bold text-gray-300">${target.label}</span>
-        </div>
-    `).join('');
+  const itemsHtml = slideData.items.map(item => `
+    <div id="${item.id}" class="draggable text-5xl p-4 bg-yellow-200 rounded-lg" draggable="true" data-count="${item.count}">${item.content}</div>
+  `).join('');
+  const targetsHtml = slideData.targets.map(target => `
+    <div class="drop-target w-32 h-32 border-4 border-dashed border-gray-400 rounded-lg flex justify-center items-center" data-accepts="${target.accepts}">
+      <span class="text-6xl font-bold text-gray-300">${target.label}</span>
+    </div>
+  `).join('');
 
-    return `
-        <h3 class="text-2xl font-bold mb-2">${slideData.title}</h3>
-        <p class="text-lg mb-4">${slideData.instruction}</p>
-        <div class="bg-blue-100 p-4 rounded-lg mb-6 flex justify-center flex-wrap gap-4" id="start-area">${itemsHtml}</div>
-        <div class="flex justify-center flex-wrap gap-4">${targetsHtml}</div>
-        ${slideData.isPractice ? '<div class="text-center mt-6"><button class="check-answer-btn bg-emerald-500 text-white font-bold py-2 px-6 rounded-lg button-pop">Did I get it?</button></div>' : ''}
-    `;
+  return `
+    <h3 class="text-2xl font-bold mb-2">${slideData.title}</h3>
+    <p class="text-lg mb-4">${slideData.instruction}</p>
+    <div class="bg-blue-100 p-4 rounded-lg mb-6 flex justify-center flex-wrap gap-4" id="start-area">${itemsHtml}</div>
+    <div class="flex justify-center flex-wrap gap-4">${targetsHtml}</div>
+    ${slideData.isPractice ? '<div class="text-center mt-6"><button class="check-answer-btn bg-emerald-500 text-white font-bold py-2 px-6 rounded-lg button-pop">Did I get it?</button></div>' : ''}
+  `;
 }
 
 function renderDragDropSequence(slideData) {
-    const itemsHtml = slideData.items.map(item => `
-        <div id="${item.id}" class="draggable text-4xl p-4 bg-orange-200 rounded-lg" draggable="true" data-value="${item.content}">${item.content}</div>
-    `).join('');
-    const targetsHtml = slideData.correctSequence.map((_, index) => `
-        <div class="drop-target w-24 h-24 border-4 border-dashed border-gray-400 rounded-lg flex justify-center items-center" data-index="${index}"></div>
-    `).join('');
+  const itemsHtml = slideData.items.map(item => `
+    <div id="${item.id}" class="draggable text-4xl p-4 bg-orange-200 rounded-lg" draggable="true" data-value="${item.content}">${item.content}</div>
+  `).join('');
+  const targetsHtml = slideData.correctSequence.map((_, index) => `
+    <div class="drop-target w-24 h-24 border-4 border-dashed border-gray-400 rounded-lg flex justify-center items-center" data-index="${index}"></div>
+  `).join('');
 
-    return `
-        <h3 class="text-2xl font-bold mb-2">${slideData.title}</h3>
-        <p class="text-lg mb-4">${slideData.instruction}</p>
-        <div class="bg-blue-100 p-4 rounded-lg mb-6 flex justify-center flex-wrap gap-4" id="start-area">${itemsHtml}</div>
-        <div class="flex justify-center flex-wrap gap-4" id="sequence-targets">${targetsHtml}</div>
-        ${slideData.isPractice ? '<div class="text-center mt-6"><button class="check-answer-btn bg-emerald-500 text-white font-bold py-2 px-6 rounded-lg button-pop">Did I get it?</button></div>' : ''}
-    `;
+  return `
+    <h3 class="text-2xl font-bold mb-2">${slideData.title}</h3>
+    <p class="text-lg mb-4">${slideData.instruction}</p>
+    <div class="bg-blue-100 p-4 rounded-lg mb-6 flex justify-center flex-wrap gap-4" id="start-area">${itemsHtml}</div>
+    <div class="flex justify-center flex-wrap gap-4" id="sequence-targets">${targetsHtml}</div>
+    ${slideData.isPractice ? '<div class="text-center mt-6"><button class="check-answer-btn bg-emerald-500 text-white font-bold py-2 px-6 rounded-lg button-pop">Did I get it?</button></div>' : ''}
+  `;
 }
 
+function renderMultipleChoice(slideData) {
+  if (slideData.group && !slideData.options) {
+    const count = slideData.group.match(/./gu).length;
+    slideData.options = [
+      { content: `${count}`, correct: true },
+      { content: `${count === 5 ? 4 : count + 1}`, correct: false },
+      { content: `${count === 1 ? 2 : count - 1}`, correct: false }
+    ].sort(() => Math.random() - 0.5);
+  }
+
+  const optionsHtml = slideData.options.map((opt, index) => `
+    <label class="block border-2 border-gray-300 rounded-lg p-4 text-center hover:bg-yellow-100 cursor-pointer has-[:checked]:bg-emerald-200 has-[:checked]:border-emerald-500">
+      <input type="radio" name="mc-option" value="${index}" class="sr-only">
+      <span class="text-4xl">${opt.content}</span>
+    </label>
+  `).join('');
+
+  return `
+    <h3 class="text-2xl font-bold mb-2">${slideData.title}</h3>
+    <p class="text-lg mb-4">${slideData.question}</p>
+    ${slideData.group ? `<div class="text-6xl text-center mb-4 break-all">${slideData.group}</div>` : ''}
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">${optionsHtml}</div>
+    ${slideData.isPractice ? '<div class="text-center mt-6"><button class="check-answer-btn bg-emerald-500 text-white font-bold py-2 px-6 rounded-lg button-pop">Did I get it?</button></div>' : ''}
+  `;
+}
+
+function renderTrueFalse(slideData) {
+  return `
+    <h3 class="text-2xl font-bold mb-2">${slideData.title}</h3>
+    <p class="text-lg mb-4">${slideData.question}</p>
+    <div class="flex justify-center items-center space-x-8 bg-gray-100 p-8 rounded-lg">
+      <div class="text-8xl">${slideData.itemContent}</div>
+      <div class="text-8xl font-bold">${slideData.numeral}</div>
+    </div>
+    <div class="grid grid-cols-2 gap-4 mt-6">
+      <label class="block border-2 border-gray-300 rounded-lg p-4 text-center hover:bg-yellow-100 cursor-pointer has-[:checked]:bg-emerald-200 has-[:checked]:border-emerald-500">
+        <input type="radio" name="mc-option" value="true" class="sr-only">
+        <span class="text-4xl">✔️ True</span>
+      </label>
+      <label class="block border-2 border-gray-300 rounded-lg p-4 text-center hover:bg-yellow-100 cursor-pointer has-[:checked]:bg-red-200 has-[:checked]:border-red-500">
+        <input type="radio" name="mc-option" value="false" class="sr-only">
+        <span class="text-4xl">❌ False</span>
+      </label>
+    </div>
+    ${slideData.isPractice ? '<div class="text-center mt-6"><button class="check-answer-btn bg-emerald-500 text-white font-bold py-2 px-6 rounded-lg button-pop">Did I get it?</button></div>' : ''}
+  `;
+}
+
+function renderShortAnswer(slideData) {
+  return `
+    <h3 class="text-2xl font-bold mb-2">${slideData.title}</h3>
+    <p class="text-lg mb-4">${slideData.question}</p>
+    <div class="text-8xl text-center mb-4 break-all">${slideData.itemContent}</div>
+    <input type="text" id="short-answer-input" class="block w-40 mx-auto text-center text-4xl p-2 border-4 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500" maxlength="1" inputmode="numeric" pattern="[0-9]*">
+    ${slideData.isPractice ? '<div class="text-center mt-6"><button class="check-answer-btn bg-emerald-500 text-white font-bold py-2 px-6 rounded-lg button-pop">Did I get it?</button></div>' : ''}
+  `;
+}
+
+function renderDrawingCanvas(slideData) {
+  return `
+    <h3 class="text-2xl font-bold mb-2">${slideData.title}</h3>
+    <p class="text-lg mb-4">${slideData.instruction}</p>
+    <div class="flex flex-col sm:flex-row gap-4">
+      <div id="drawing-tools" class="flex sm:flex-col justify-center items-center gap-2 p-2 bg-gray-100 rounded-lg">
+        <button class="color-btn w-10 h-10 rounded-full border-4 border-white" data-color="black" style="background-color: black;"></button>
+        <button class="color-btn w-10 h-10 rounded-full border-4 border-white" data-color="red" style="background-color: red;"></button>
+        <button class="color-btn w-10 h-10 rounded-full border-4 border-white" data-color="blue" style="background-color: blue;"></button>
+        <button class="color-btn w-10 h-10 rounded-full border-4 border-white" data-color="green" style="background-color: green;"></button>
+        <hr class="w-full my-2 hidden sm:block">
+        <button class="size-btn p-1 rounded-full border-2 border-transparent" data-size="5"><div class="w-3 h-3 bg-black rounded-full"></div></button>
+        <button class="size-btn p-1 rounded-full border-2 border-transparent" data-size="10"><div class="w-5 h-5 bg-black rounded-full"></div></button>
+        <button class="size-btn p-1 rounded-full border-2 border-transparent" data-size="20"><div class="w-7 h-7 bg-black rounded-full"></div></button>
+        <hr class="w-full my-2 hidden sm:block">
+        <button id="eraser-btn" class="text-2xl p-2">✏️</button>
+        <button id="clear-canvas-btn" class="text-2xl p-2">🗑️</button>
+      </div>
+      <canvas id="drawing-canvas" class="bg-gray-50 border-2 border-gray-300 rounded-lg w-full" style="touch-action: none;"></canvas>
+    </div>
+  `;
+}
+
+/* ---------------------- ACTIVATE / INTERACTION ---------------------- */
+
+function activateSlide(slideData, dayIndex, slideIndex) {
+  const progressKey = getProgressKey(dayIndex, slideIndex);
+
+  switch (slideData.type) {
+    case 'drag-drop-sort':
+    case 'drag-drop-sequence':
+      initDragAndDrop(slideData, progressKey);
+      break;
+    case 'short-answer':
+      initShortAnswer(slideData, progressKey);
+      break;
+    case 'drawing':
+      initDrawingCanvas(slideData, progressKey);
+      break;
+    case 'multiple-choice':
+    case 'true-false':
+      const savedAnswer = progressData[progressKey]?.answer;
+      if (savedAnswer !== undefined) {
+        const radio = document.querySelector(`input[name="mc-option"][value="${savedAnswer}"]`);
+        if (radio) radio.checked = true;
+      }
+      break;
+  }
+}
+
+/* ---------------- Drag & Drop (mouse + touch, unified) ---------------- */
+
 function initDragAndDrop(slideData, progressKey) {
-    const draggables = Array.from(document.querySelectorAll('.draggable'));
-    const targets = Array.from(document.querySelectorAll('.drop-target'));
-    const startArea = document.getElementById('start-area');
-    let draggedItem = null;
-    let ghost = null;
-    let offsetX = 0, offsetY = 0;
+  const draggables = Array.from(document.querySelectorAll('.draggable'));
+  const targets = Array.from(document.querySelectorAll('.drop-target'));
+  const startArea = document.getElementById('start-area');
+  let draggedItem = null;
+  let ghost = null;
+  let offsetX = 0, offsetY = 0;
 
-    // Load saved positions
-    const savedPositions = progressData[progressKey]?.positions;
-    if (savedPositions) {
-        for (const [itemId, parentData] of Object.entries(savedPositions)) {
-            const item = document.getElementById(itemId);
-            if (!item) continue;
-            let target = null;
-            if (parentData.type === 'start') {
-                 target = startArea;
-            } else if (parentData.type === 'target') {
-                 target = targets.find(t => (t.dataset.accepts == parentData.id) || (t.dataset.index == parentData.id));
-            }
-            if (item && target) {
-                target.appendChild(item);
-                if (target.querySelector('span')) target.querySelector('span').style.display = 'none';
-            }
-        }
+  // Restore saved positions
+  const savedPositions = progressData[progressKey]?.positions;
+  if (savedPositions) {
+    for (const [itemId, parentData] of Object.entries(savedPositions)) {
+      const item = document.getElementById(itemId);
+      if (!item) continue;
+      let target = null;
+      if (parentData.type === 'start') {
+        target = startArea;
+      } else if (parentData.type === 'target') {
+        target = targets.find(t => (t.dataset.accepts == parentData.id) || (t.dataset.index == parentData.id));
+      }
+      if (item && target) {
+        target.appendChild(item);
+        if (target.querySelector('span')) target.querySelector('span').style.display = 'none';
+      }
+    }
+  }
+
+  function handleDragStart(e) {
+    const target = e.currentTarget;
+    draggedItem = target;
+    draggedItem.classList.add('dragging');
+
+    const rect = draggedItem.getBoundingClientRect();
+    ghost = draggedItem.cloneNode(true);
+    ghost.classList.add('ghost-drag');
+    document.body.appendChild(ghost);
+
+    if (e.type === 'touchstart') {
+      const touch = e.touches[0];
+      offsetX = touch.clientX - rect.left;
+      offsetY = touch.clientY - rect.top;
+      ghost.style.left = `${touch.clientX - offsetX}px`;
+      ghost.style.top = `${touch.clientY - offsetY}px`;
+    } else {
+      offsetX = e.clientX - rect.left;
+      offsetY = e.clientY - rect.top;
+      ghost.style.left = `${e.clientX - offsetX}px`;
+      ghost.style.top = `${e.clientY - offsetY}px`;
+    }
+  }
+
+  function handleDragMove(e) {
+    if (!draggedItem) return;
+    e.preventDefault();
+
+    let clientX, clientY;
+    if (e.type === 'touchmove') {
+      const touch = e.touches[0];
+      clientX = touch.clientX;
+      clientY = touch.clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
     }
 
-    function handleDragStart(e) {
-        const target = e.currentTarget;
-        draggedItem = target;
-        draggedItem.classList.add('dragging');
-        
-        const rect = draggedItem.getBoundingClientRect();
-        ghost = draggedItem.cloneNode(true);
-        ghost.classList.add('ghost-drag');
-        document.body.appendChild(ghost);
+    ghost.style.left = `${clientX - offsetX}px`;
+    ghost.style.top = `${clientY - offsetY}px`;
 
-        if (e.type === 'touchstart') {
-            const touch = e.touches[0];
-            offsetX = touch.clientX - rect.left;
-            offsetY = touch.clientY - rect.top;
-            ghost.style.left = `${touch.clientX - offsetX}px`;
-            ghost.style.top = `${touch.clientY - offsetY}px`;
-        } else { // Mouse
-            offsetX = e.clientX - rect.left;
-            offsetY = e.clientY - rect.top;
-            ghost.style.left = `${e.clientX - offsetX}px`;
-            ghost.style.top = `${e.clientY - offsetY}px`;
-        }
+    targets.forEach(t => t.classList.remove('over'));
+    startArea.classList.remove('over');
+
+    const elementUnder = document.elementFromPoint(clientX, clientY);
+    const targetUnder = elementUnder ? elementUnder.closest('.drop-target') : null;
+    if (targetUnder) {
+      targetUnder.classList.add('over');
+    } else if (elementUnder && elementUnder.closest('#start-area')) {
+      startArea.classList.add('over');
+    }
+  }
+
+  function handleDragEnd(e) {
+    if (!draggedItem) return;
+
+    let clientX, clientY;
+    if (e.type === 'touchend') {
+      const touch = e.changedTouches[0];
+      clientX = touch.clientX;
+      clientY = touch.clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
     }
 
-    function handleDragMove(e) {
-        if (!draggedItem) return;
-        e.preventDefault();
+    const elementUnder = document.elementFromPoint(clientX, clientY);
+    const targetUnder = elementUnder ? elementUnder.closest('.drop-target') : null;
+    const startAreaUnder = elementUnder ? elementUnder.closest('#start-area') : null;
 
-        let clientX, clientY;
-        if (e.type === 'touchmove') {
-            const touch = e.touches[0];
-            clientX = touch.clientX;
-            clientY = touch.clientY;
-        } else { // Mouse
-            clientX = e.clientX;
-            clientY = e.clientY;
-        }
-
-        ghost.style.left = `${clientX - offsetX}px`;
-        ghost.style.top = `${clientY - offsetY}px`;
-
-        targets.forEach(t => t.classList.remove('over'));
-        startArea.classList.remove('over');
-
-        const elementUnder = document.elementFromPoint(clientX, clientY);
-        const targetUnder = elementUnder ? elementUnder.closest('.drop-target') : null;
-        if (targetUnder) {
-            targetUnder.classList.add('over');
-        } else if (elementUnder && elementUnder.closest('#start-area')) {
-            startArea.classList.add('over');
-        }
+    if (targetUnder) {
+      if (targetUnder.children.length > 0 && targetUnder.children[0].classList.contains('draggable')) {
+        const existingItem = targetUnder.children[0];
+        const originalParent = draggedItem.parentElement;
+        originalParent.appendChild(existingItem);
+        targetUnder.appendChild(draggedItem);
+      } else {
+        targetUnder.appendChild(draggedItem);
+      }
+      if (targetUnder.querySelector('span')) targetUnder.querySelector('span').style.display = 'none';
+    } else if (startAreaUnder) {
+      startArea.appendChild(draggedItem);
     }
 
-    function handleDragEnd(e) {
-        if (!draggedItem) return;
-        
-        let clientX, clientY;
-        if (e.type === 'touchend') {
-            const touch = e.changedTouches[0];
-            clientX = touch.clientX;
-            clientY = touch.clientY;
-        } else { // Mouse
-            clientX = e.clientX;
-            clientY = e.clientY;
-        }
+    draggedItem.classList.remove('dragging');
+    targets.forEach(t => t.classList.remove('over'));
+    startArea.classList.remove('over');
+    document.body.removeChild(ghost);
+    draggedItem = null;
+    ghost = null;
+    saveDragDropState(progressKey);
+  }
 
-        const elementUnder = document.elementFromPoint(clientX, clientY);
-        const targetUnder = elementUnder ? elementUnder.closest('.drop-target') : null;
-        const startAreaUnder = elementUnder ? elementUnder.closest('#start-area') : null;
+  draggables.forEach(draggable => {
+    draggable.addEventListener('mousedown', handleDragStart);
+    draggable.addEventListener('touchstart', handleDragStart, { passive: false });
+  });
 
-        if (targetUnder) {
-            if (targetUnder.children.length > 0 && targetUnder.children[0].classList.contains('draggable')) {
-                // Swap
-                const existingItem = targetUnder.children[0];
-                const originalParent = draggedItem.parentElement;
-                originalParent.appendChild(existingItem);
-                targetUnder.appendChild(draggedItem);
-            } else {
-                targetUnder.appendChild(draggedItem);
-            }
-            if (targetUnder.querySelector('span')) targetUnder.querySelector('span').style.display = 'none';
-        } else if (startAreaUnder) {
-            startArea.appendChild(draggedItem);
-        }
+  document.addEventListener('mousemove', handleDragMove);
+  document.addEventListener('touchmove', handleDragMove, { passive: false });
 
-        draggedItem.classList.remove('dragging');
-        targets.forEach(t => t.classList.remove('over'));
-        startArea.classList.remove('over');
-        document.body.removeChild(ghost);
-        draggedItem = null;
-        ghost = null;
-        saveDragDropState(progressKey);
-    }
-    
-    draggables.forEach(draggable => {
-        draggable.addEventListener('mousedown', handleDragStart);
-        draggable.addEventListener('touchstart', handleDragStart, { passive: false });
-    });
+  document.addEventListener('mouseup', handleDragEnd);
+  document.addEventListener('touchend', handleDragEnd);
 
-    document.addEventListener('mousemove', handleDragMove);
-    document.addEventListener('touchmove', handleDragMove, { passive: false });
-
-    document.addEventListener('mouseup', handleDragEnd);
-    document.addEventListener('touchend', handleDragEnd);
-
-    const checkBtn = document.querySelector('.check-answer-btn');
-    if (checkBtn) {
-        checkBtn.addEventListener('click', () => {
-            let isCorrect = false;
-            if (slideData.type === 'drag-drop-sort') {
-                const currentTargets = document.querySelectorAll('.drop-target');
-                const startArea = document.getElementById('start-area');
-                let allTargetsCorrect = true;
-                currentTargets.forEach(target => {
-                    const accepts = target.dataset.accepts;
-                    const containedItems = Array.from(target.children).filter(c => c.classList.contains('draggable'));
-                    if (containedItems.some(item => item.dataset.count != accepts)) {
-                        allTargetsCorrect = false;
-                    }
-                });
-                const totalItemsInTargets = Array.from(currentTargets).reduce((acc, t) => acc + t.querySelectorAll('.draggable').length, 0);
-                isCorrect = allTargetsCorrect && (totalItemsInTargets === slideData.items.length) && (startArea.children.length === 0);
-
-            } else if (slideData.type === 'drag-drop-sequence') {
-                const sequenceTargets = document.getElementById('sequence-targets');
-                const placedItems = Array.from(sequenceTargets.children).map(t => t.children[0]?.dataset.value);
-                isCorrect = placedItems.length === slideData.correctSequence.length && placedItems.every((val, index) => val === slideData.correctSequence[index]);
-            }
-            handleAnswer(isCorrect);
+  const checkBtn = document.querySelector('.check-answer-btn');
+  if (checkBtn) {
+    checkBtn.addEventListener('click', () => {
+      let isCorrect = false;
+      if (slideData.type === 'drag-drop-sort') {
+        const currentTargets = document.querySelectorAll('.drop-target');
+        const startArea = document.getElementById('start-area');
+        let allTargetsCorrect = true;
+        currentTargets.forEach(target => {
+          const accepts = target.dataset.accepts;
+          const containedItems = Array.from(target.children).filter(c => c.classList.contains('draggable'));
+          if (containedItems.some(item => item.dataset.count != accepts)) {
+            allTargetsCorrect = false;
+          }
         });
-    }
+        const totalItemsInTargets = Array.from(currentTargets).reduce((acc, t) => acc + t.querySelectorAll('.draggable').length, 0);
+        isCorrect = allTargetsCorrect && (totalItemsInTargets === slideData.items.length) && (startArea.children.length === 0);
+
+      } else if (slideData.type === 'drag-drop-sequence') {
+        const sequenceTargets = document.getElementById('sequence-targets');
+        const placedItems = Array.from(sequenceTargets.children).map(t => t.children[0]?.dataset.value);
+        isCorrect = placedItems.length === slideData.correctSequence.length && placedItems.every((val, index) => val === slideData.correctSequence[index]);
+      }
+      handleAnswer(isCorrect);
+    });
+  }
 }
 
 function saveDragDropState(progressKey) {
-    if (!progressData[progressKey]) progressData[progressKey] = {};
-    progressData[progressKey].positions = {};
-    
-    document.querySelectorAll('.draggable').forEach(item => {
-        const parent = item.parentElement;
-        let parentData = {};
-        if (parent.id === 'start-area') {
-            parentData = { type: 'start' };
-        } else if (parent.classList.contains('drop-target')) {
-            parentData = { type: 'target', id: parent.dataset.accepts || parent.dataset.index };
-        }
-        progressData[progressKey].positions[item.id] = parentData;
-    });
-    saveProgress();
-}
+  if (!progressData[progressKey]) progressData[progressKey] = {};
+  progressData[progressKey].positions = {};
 
-// Multiple Choice
-function renderMultipleChoice(slideData) {
-    // Special case for dynamic MC questions in practice center
-    if (slideData.group && !slideData.options) {
-        const count = slideData.group.match(/./gu).length; // Handles multi-character emojis
-        slideData.options = [
-            { content: `${count}`, correct: true },
-            { content: `${count === 5 ? 4 : count + 1}`, correct: false },
-            { content: `${count === 1 ? 2 : count - 1}`, correct: false }
-        ].sort(() => Math.random() - 0.5); // Shuffle options
+  document.querySelectorAll('.draggable').forEach(item => {
+    const parent = item.parentElement;
+    let parentData = {};
+    if (parent.id === 'start-area') {
+      parentData = { type: 'start' };
+    } else if (parent.classList.contains('drop-target')) {
+      parentData = { type: 'target', id: parent.dataset.accepts || parent.dataset.index };
     }
-
-    const optionsHtml = slideData.options.map((opt, index) => `
-        <label class="block border-2 border-gray-300 rounded-lg p-4 text-center hover:bg-yellow-100 cursor-pointer has-[:checked]:bg-emerald-200 has-[:checked]:border-emerald-500">
-            <input type="radio" name="mc-option" value="${index}" class="sr-only">
-            <span class="text-4xl">${opt.content}</span>
-        </label>
-    `).join('');
-
-    return `
-        <h3 class="text-2xl font-bold mb-2">${slideData.title}</h3>
-        <p class="text-lg mb-4">${slideData.question}</p>
-        ${slideData.group ? `<div class="text-6xl text-center mb-4 break-all">${slideData.group}</div>` : ''}
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">${optionsHtml}</div>
-        ${slideData.isPractice ? '<div class="text-center mt-6"><button class="check-answer-btn bg-emerald-500 text-white font-bold py-2 px-6 rounded-lg button-pop">Did I get it?</button></div>' : ''}
-    `;
+    progressData[progressKey].positions[item.id] = parentData;
+  });
+  saveProgress();
 }
 
-// True/False
-function renderTrueFalse(slideData) {
-    return `
-        <h3 class="text-2xl font-bold mb-2">${slideData.title}</h3>
-        <p class="text-lg mb-4">${slideData.question}</p>
-        <div class="flex justify-center items-center space-x-8 bg-gray-100 p-8 rounded-lg">
-            <div class="text-8xl">${slideData.itemContent}</div>
-            <div class="text-8xl font-bold">${slideData.numeral}</div>
-        </div>
-        <div class="grid grid-cols-2 gap-4 mt-6">
-             <label class="block border-2 border-gray-300 rounded-lg p-4 text-center hover:bg-yellow-100 cursor-pointer has-[:checked]:bg-emerald-200 has-[:checked]:border-emerald-500">
-                <input type="radio" name="mc-option" value="true" class="sr-only">
-                <span class="text-4xl">✔️ True</span>
-            </label>
-             <label class="block border-2 border-gray-300 rounded-lg p-4 text-center hover:bg-yellow-100 cursor-pointer has-[:checked]:bg-red-200 has-[:checked]:border-red-500">
-                <input type="radio" name="mc-option" value="false" class="sr-only">
-                <span class="text-4xl">❌ False</span>
-            </label>
-        </div>
-        ${slideData.isPractice ? '<div class="text-center mt-6"><button class="check-answer-btn bg-emerald-500 text-white font-bold py-2 px-6 rounded-lg button-pop">Did I get it?</button></div>' : ''}
-    `;
-}
+/* -------------------- MC/TF Check (click handler) -------------------- */
 
-// Add event listener for MC/TF check buttons after rendering
 document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('check-answer-btn')) {
-        const slideSet = isPracticeCenter ? lessonData.days[currentDay].practiceCenter : lessonData.days[currentDay].slides;
-        const slideData = slideSet[currentSlide];
-        
-        if (slideData.type === 'multiple-choice' || slideData.type === 'true-false') {
-            const selectedRadio = document.querySelector('input[name="mc-option"]:checked');
-            if (!selectedRadio) {
-                showFeedback(false, "Please choose an answer!");
-                return;
-            }
-            const selectedValue = selectedRadio.value;
-            
-            let isCorrect;
-            if (slideData.type === 'multiple-choice') {
-                isCorrect = slideData.options[selectedValue].correct;
-            } else { // true-false
-                isCorrect = (selectedValue === 'true') === slideData.correct;
-            }
-            
-            const progressKey = getProgressKey(currentDay, currentSlide);
-            if (!progressData[progressKey]) progressData[progressKey] = {};
-            progressData[progressKey].answer = selectedValue;
-            saveProgress();
-            
-            handleAnswer(isCorrect);
-        }
+  if (e.target.classList.contains('check-answer-btn')) {
+    const slideSet = isPracticeCenter ? lessonData.days[currentDay].practiceCenter : lessonData.days[currentDay].slides;
+    const slideData = slideSet[currentSlide];
+
+    if (slideData.type === 'multiple-choice' || slideData.type === 'true-false') {
+      const selectedRadio = document.querySelector('input[name="mc-option"]:checked');
+      if (!selectedRadio) {
+        showFeedback(false, "Please choose an answer!");
+        return;
+      }
+      const selectedValue = selectedRadio.value;
+
+      let isCorrect;
+      if (slideData.type === 'multiple-choice') {
+        isCorrect = slideData.options[selectedValue].correct;
+      } else { // true-false
+        isCorrect = (selectedValue === 'true') === slideData.correct;
+      }
+
+      const progressKey = getProgressKey(currentDay, currentSlide);
+      if (!progressData[progressKey]) progressData[progressKey] = {};
+      progressData[progressKey].answer = selectedValue;
+      saveProgress();
+
+      handleAnswer(isCorrect);
     }
+  }
 });
 
-
-// Short Answer
-function renderShortAnswer(slideData) {
-    return `
-        <h3 class="text-2xl font-bold mb-2">${slideData.title}</h3>
-        <p class="text-lg mb-4">${slideData.question}</p>
-        <div class="text-8xl text-center mb-4 break-all">${slideData.itemContent}</div>
-        <input type="text" id="short-answer-input" class="block w-40 mx-auto text-center text-4xl p-2 border-4 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500" maxlength="1" inputmode="numeric" pattern="[0-9]*">
-        ${slideData.isPractice ? '<div class="text-center mt-6"><button class="check-answer-btn bg-emerald-500 text-white font-bold py-2 px-6 rounded-lg button-pop">Did I get it?</button></div>' : ''}
-    `;
-}
+/* ---------------------------- Short Answer ---------------------------- */
 
 function initShortAnswer(slideData, progressKey) {
-    const input = document.getElementById('short-answer-input');
-    
-    // Load saved answer
-    if (progressData[progressKey]?.answer) {
-        input.value = progressData[progressKey].answer;
-    }
+  const input = document.getElementById('short-answer-input');
 
-    input.addEventListener('input', () => {
-        if (!progressData[progressKey]) progressData[progressKey] = {};
-        progressData[progressKey].answer = input.value;
-        saveProgress();
+  if (progressData[progressKey]?.answer) {
+    input.value = progressData[progressKey].answer;
+  }
+
+  input.addEventListener('input', () => {
+    if (!progressData[progressKey]) progressData[progressKey] = {};
+    progressData[progressKey].answer = input.value;
+    saveProgress();
+  });
+
+  const checkBtn = document.querySelector('.check-answer-btn');
+  if (checkBtn) {
+    checkBtn.addEventListener('click', () => {
+      const isCorrect = input.value.trim() === slideData.correctAnswer;
+      handleAnswer(isCorrect);
     });
-
-    const checkBtn = document.querySelector('.check-answer-btn');
-    if (checkBtn) {
-        checkBtn.addEventListener('click', () => {
-            const isCorrect = input.value.trim() === slideData.correctAnswer;
-            handleAnswer(isCorrect);
-        });
-    }
+  }
 }
 
-// Drawing Canvas
-function renderDrawingCanvas(slideData) {
-    return `
-        <h3 class="text-2xl font-bold mb-2">${slideData.title}</h3>
-        <p class="text-lg mb-4">${slideData.instruction}</p>
-        <div class="flex flex-col sm:flex-row gap-4">
-            <div id="drawing-tools" class="flex sm:flex-col justify-center items-center gap-2 p-2 bg-gray-100 rounded-lg">
-                <button class="color-btn w-10 h-10 rounded-full border-4 border-white" data-color="black" style="background-color: black;"></button>
-                <button class="color-btn w-10 h-10 rounded-full border-4 border-white" data-color="red" style="background-color: red;"></button>
-                <button class="color-btn w-10 h-10 rounded-full border-4 border-white" data-color="blue" style="background-color: blue;"></button>
-                <button class="color-btn w-10 h-10 rounded-full border-4 border-white" data-color="green" style="background-color: green;"></button>
-                <hr class="w-full my-2 hidden sm:block">
-                <button class="size-btn p-1 rounded-full border-2 border-transparent" data-size="5"><div class="w-3 h-3 bg-black rounded-full"></div></button>
-                <button class="size-btn p-1 rounded-full border-2 border-transparent" data-size="10"><div class="w-5 h-5 bg-black rounded-full"></div></button>
-                <button class="size-btn p-1 rounded-full border-2 border-transparent" data-size="20"><div class="w-7 h-7 bg-black rounded-full"></div></button>
-                <hr class="w-full my-2 hidden sm:block">
-                <button id="eraser-btn" class="text-2xl p-2">✏️</button>
-                <button id="clear-canvas-btn" class="text-2xl p-2">🗑️</button>
-            </div>
-            <canvas id="drawing-canvas" class="bg-gray-50 border-2 border-gray-300 rounded-lg w-full" style="touch-action: none;"></canvas>
-        </div>
-    `;
-}
+/* ---------------------------- Drawing Canvas ---------------------------- */
 
 function initDrawingCanvas(slideData, progressKey) {
-    const canvas = document.getElementById('drawing-canvas');
-    const tools = document.getElementById('drawing-tools');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let isDrawing = false;
-    
-    // Set canvas size based on container
-    const parent = canvas.parentElement;
-    canvas.width = parent.clientWidth - (tools ? tools.clientWidth : 0) - 20; // rough estimate
-    canvas.height = 400;
+  const canvas = document.getElementById('drawing-canvas');
+  const tools = document.getElementById('drawing-tools');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let isDrawing = false;
 
-    let brushColor = 'black';
-    let brushSize = 10;
-    
-    // Load saved drawing
-    if (progressData[progressKey]?.drawing) {
-        const img = new Image();
-        img.onload = () => ctx.drawImage(img, 0, 0);
-        img.src = progressData[progressKey].drawing;
-    }
+  // Set canvas size
+  const parent = canvas.parentElement;
+  canvas.width = parent.clientWidth - (tools ? tools.clientWidth : 0) - 20;
+  canvas.height = 400;
 
-    function getPos(e) {
-        const rect = canvas.getBoundingClientRect();
-        const scaleX = canvas.width / rect.width;
-        const scaleY = canvas.height / rect.height;
-        const touch = e.touches ? e.touches[0] : e;
-        return {
-            x: (touch.clientX - rect.left) * scaleX,
-            y: (touch.clientY - rect.top) * scaleY
-        };
-    }
+  let brushColor = 'black';
+  let brushSize = 10;
 
-    function startDrawing(e) {
-        e.preventDefault();
-        isDrawing = true;
-        const { x, y } = getPos(e);
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-    }
+  if (progressData[progressKey]?.drawing) {
+    const img = new Image();
+    img.onload = () => ctx.drawImage(img, 0, 0);
+    img.src = progressData[progressKey].drawing;
+  }
 
-    function draw(e) {
-        if (!isDrawing) return;
-        e.preventDefault();
-        const { x, y } = getPos(e);
-        ctx.lineTo(x, y);
-        ctx.strokeStyle = brushColor;
-        ctx.lineWidth = brushSize;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-    }
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const touch = e.touches ? e.touches[0] : e;
+    return {
+      x: (touch.clientX - rect.left) * scaleX,
+      y: (touch.clientY - rect.top) * scaleY
+    };
+  }
 
-    function stopDrawing() {
-        if (!isDrawing) return;
-        isDrawing = false;
-        ctx.beginPath();
-        
-        // Save drawing
-        if (!progressData[progressKey]) progressData[progressKey] = {};
-        progressData[progressKey].drawing = canvas.toDataURL();
+  function startDrawing(e) {
+    e.preventDefault();
+    isDrawing = true;
+    const { x, y } = getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+  }
+
+  function draw(e) {
+    if (!isDrawing) return;
+    e.preventDefault();
+    const { x, y } = getPos(e);
+    ctx.lineTo(x, y);
+    ctx.strokeStyle = brushColor;
+    ctx.lineWidth = brushSize;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+  }
+
+  function stopDrawing() {
+    if (!isDrawing) return;
+    isDrawing = false;
+    ctx.beginPath();
+
+    if (!progressData[progressKey]) progressData[progressKey] = {};
+    progressData[progressKey].drawing = canvas.toDataURL();
+    saveProgress();
+  }
+
+  canvas.addEventListener('mousedown', startDrawing);
+  canvas.addEventListener('mousemove', draw);
+  canvas.addEventListener('mouseup', stopDrawing);
+  canvas.addEventListener('mouseleave', stopDrawing);
+  canvas.addEventListener('touchstart', startDrawing, { passive: false });
+  canvas.addEventListener('touchmove', draw, { passive: false });
+  canvas.addEventListener('touchend', stopDrawing);
+
+  tools.addEventListener('click', (e) => {
+    const target = e.target.closest('button');
+    if (!target) return;
+
+    if (target.classList.contains('color-btn')) {
+      brushColor = target.dataset.color;
+    } else if (target.classList.contains('size-btn')) {
+      brushSize = target.dataset.size;
+    } else if (target.id === 'eraser-btn') {
+      brushColor = '#f9fafb';
+    } else if (target.id === 'clear-canvas-btn') {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (progressData[progressKey]) {
+        delete progressData[progressKey].drawing;
         saveProgress();
+      }
     }
-
-    canvas.addEventListener('mousedown', startDrawing);
-    canvas.addEventListener('mousemove', draw);
-    canvas.addEventListener('mouseup', stopDrawing);
-    canvas.addEventListener('mouseleave', stopDrawing);
-    canvas.addEventListener('touchstart', startDrawing, { passive: false });
-    canvas.addEventListener('touchmove', draw, { passive: false });
-    canvas.addEventListener('touchend', stopDrawing);
-
-    tools.addEventListener('click', (e) => {
-        const target = e.target.closest('button');
-        if (!target) return;
-
-        if (target.classList.contains('color-btn')) {
-            brushColor = target.dataset.color;
-        } else if (target.classList.contains('size-btn')) {
-            brushSize = target.dataset.size;
-        } else if (target.id === 'eraser-btn') {
-            brushColor = '#f9fafb'; // bg-gray-50
-        } else if (target.id === 'clear-canvas-btn') {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            // Clear saved data
-            if (progressData[progressKey]) {
-                delete progressData[progressKey].drawing;
-                saveProgress();
-            }
-        }
-    });
+  });
 }
 
-// --- UTILITY & HELPER FUNCTIONS ---
+/* ------------------------- UTIL / FEEDBACK / SAVE ------------------------- */
 
 function getProgressKey(day, slide) {
-    return isPracticeCenter ? `p-d${day}s${slide}` : `d${day}s${slide}`;
+  return isPracticeCenter ? `p-d${day}s${slide}` : `d${day}s${slide}`;
 }
 
 function updateNavButtons() {
-    const slideSet = isPracticeCenter ? lessonData.days[currentDay].practiceCenter : lessonData.days[currentDay].slides;
-    prevBtn.disabled = currentSlide === 0;
-    nextBtn.disabled = currentSlide === slideSet.length - 1;
-    prevBtn.classList.toggle('opacity-50', prevBtn.disabled);
-    nextBtn.classList.toggle('opacity-50', nextBtn.disabled);
+  const slideSet = isPracticeCenter ? lessonData.days[currentDay].practiceCenter : lessonData.days[currentDay].slides;
+  prevBtn.disabled = currentSlide === 0;
+  nextBtn.disabled = currentSlide === slideSet.length - 1;
+  prevBtn.classList.toggle('opacity-50', prevBtn.disabled);
+  nextBtn.classList.toggle('opacity-50', nextBtn.disabled);
 }
 
 function updateSlideCounter() {
-    const slideSet = isPracticeCenter ? lessonData.days[currentDay].practiceCenter : lessonData.days[currentDay].slides;
-    const mode = isPracticeCenter ? "Practice" : "Lesson";
-    slideCounter.textContent = `${mode} ${currentSlide + 1} / ${slideSet.length}`;
+  const slideSet = isPracticeCenter ? lessonData.days[currentDay].practiceCenter : lessonData.days[currentDay].slides;
+  const mode = isPracticeCenter ? "Practice" : "Lesson";
+  slideCounter.textContent = `${mode} ${currentSlide + 1} / ${slideSet.length}`;
 }
 
 function handleAnswer(isCorrect) {
-    if (isCorrect) {
-        const affirmations = ["Superstar!", "You're a number genius!", "Wow, you got it!", "Amazing counting!"];
-        const affirmation = affirmations[Math.floor(Math.random() * affirmations.length)];
-        showFeedback(true, affirmation);
-        
-        if (isPracticeCenter) {
-            const progressKey = getProgressKey(currentDay, currentSlide);
-            if (!progressData[progressKey]?.completed) {
-                practiceProgress[currentDay] = (practiceProgress[currentDay] || 0) + 1;
-                if (!progressData[progressKey]) progressData[progressKey] = {};
-                progressData[progressKey].completed = true;
-                saveProgress();
-                
-                // Check for completion
-                if (practiceProgress[currentDay] === lessonData.days[currentDay].practiceCenter.length) {
-                    setTimeout(() => {
-                        showFeedback(true, "You collected all the berries! You're a Practice Pro!");
-                        triggerConfetti();
-                    }, 500);
-                }
-            }
+  if (isCorrect) {
+    const affirmations = ["Superstar!", "You're a number genius!", "Wow, you got it!", "Amazing counting!"];
+    const affirmation = affirmations[Math.floor(Math.random() * affirmations.length)];
+    showFeedback(true, affirmation);
+
+    if (isPracticeCenter) {
+      const progressKey = getProgressKey(currentDay, currentSlide);
+      if (!progressData[progressKey]?.completed) {
+        practiceProgress[currentDay] = (practiceProgress[currentDay] || 0) + 1;
+        if (!progressData[progressKey]) progressData[progressKey] = {};
+        progressData[progressKey].completed = true;
+        saveProgress();
+
+        if (practiceProgress[currentDay] === lessonData.days[currentDay].practiceCenter.length) {
+          setTimeout(() => {
+            showFeedback(true, "You collected all the berries! You're a Practice Pro!");
+            triggerConfetti();
+          }, 500);
         }
-    } else {
-        const nudges = ["Not quite, let's try again!", "So close! Give it another look.", "Good try! Remember to count carefully."];
-        const nudge = nudges[Math.floor(Math.random() * nudges.length)];
-        showFeedback(false, nudge);
+      }
     }
+  } else {
+    const nudges = ["Not quite, let's try again!", "So close! Give it another look.", "Good try! Remember to count carefully."];
+    const nudge = nudges[Math.floor(Math.random() * nudges.length)];
+    showFeedback(false, nudge);
+  }
 }
 
 function showFeedback(isCorrect, text) {
-    feedbackIcon.textContent = isCorrect ? '⭐' : '🤔';
-    feedbackText.textContent = text;
-    feedbackModal.classList.add('show');
+  feedbackIcon.textContent = isCorrect ? '⭐' : '🤔';
+  feedbackText.textContent = text;
+  feedbackModal.classList.add('show');
 }
 
 function hideFeedback() {
-    feedbackModal.classList.remove('show');
-    // Re-render header to show progress if in practice center
-    if (isPracticeCenter) {
-        showSlide(currentDay, currentSlide);
-    }
+  feedbackModal.classList.remove('show');
+  if (isPracticeCenter) {
+    showSlide(currentDay, currentSlide);
+  }
 }
 
 function triggerConfetti() {
-    const container = document.getElementById('confetti-container');
-    for (let i = 0; i < 100; i++) {
-        const confetti = document.createElement('div');
-        confetti.classList.add('confetti');
-        confetti.style.left = `${Math.random() * 100}vw`;
-        confetti.style.animation = `confetti-fall ${Math.random() * 2 + 3}s linear ${Math.random() * 2}s forwards`;
-        confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
-        container.appendChild(confetti);
-        setTimeout(() => confetti.remove(), 5000);
-    }
+  const container = document.getElementById('confetti-container');
+  for (let i = 0; i < 100; i++) {
+    const confetti = document.createElement('div');
+    confetti.classList.add('confetti');
+    confetti.style.left = `${Math.random() * 100}vw`;
+    confetti.style.animation = `confetti-fall ${Math.random() * 2 + 3}s linear ${Math.random() * 2}s forwards`;
+    confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+    container.appendChild(confetti);
+    setTimeout(() => confetti.remove(), 5000);
+  }
 }
 
-// --- DATA PERSISTENCE ---
 function saveProgress() {
-    try {
-        localStorage.setItem('kindergartenNumbersProgress', JSON.stringify(progressData));
-    } catch (e) {
-        console.error("Could not save progress to localStorage:", e);
-    }
+  try { localStorage.setItem('kindergartenNumbersProgress', JSON.stringify(progressData)); }
+  catch (e) { console.error("Could not save progress to localStorage:", e); }
 }
 
 function downloadWork() {
-    // 1. Get the current state of the HTML
-    const currentHtml = document.documentElement.outerHTML;
-
-    // 2. Create the script tag with the current progress data
-    const scriptToInject = `<script>const loadedProgress = ${JSON.stringify(progressData)};<\/script>`;
-
-    // 3. Inject the script tag right after the opening body tag to ensure it loads first.
-    const modifiedHtml = currentHtml.replace(
-        /(<body[^>]*>)/i,
-        `$1${scriptToInject}`
-    );
-
-    // 4. Create a Blob and trigger a download
-    const blob = new Blob([modifiedHtml], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'my-number-lesson.html';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const currentHtml = document.documentElement.outerHTML;
+  const scriptToInject = `<script>const loadedProgress = ${JSON.stringify(progressData)};<\/script>`;
+  const modifiedHtml = currentHtml.replace(/(<body[^>]*>)/i, `$1${scriptToInject}`);
+  const blob = new Blob([modifiedHtml], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'my-number-lesson.html';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
-</script>
-  
-    // --- minimal scaffolding so the sync layer below can hook up ---
-    // (If these exist in your pasted code already, remove these small stubs.)
-    if (typeof initTabs !== 'function') window.initTabs = function(){};
-    if (typeof showSlide !== 'function') window.showSlide = function(){};
-    if (typeof navigatePrev !== 'function') window.navigatePrev = function(){};
-    if (typeof navigateNext !== 'function') window.navigateNext = function(){};
-    if (typeof saveProgress !== 'function') window.saveProgress = function(){};
+  </script>
 
-    // Grabs (your DOM ids already exist)
-    const lessonContainer = document.getElementById('lesson-container');
-    const dayTabsContainer = document.getElementById('day-tabs');
-    const prevBtn = document.getElementById('prev-btn');
-    const nextBtn = document.getElementById('next-btn');
-    const downloadBtn = document.getElementById('download-btn');
-    const feedbackCloseBtn = document.getElementById('feedback-close-btn');
+  <!-- ============================ SYNC LAYER ============================ -->
+  <script>
+let _app, _db, _auth, _roomRef, _unsubSnap = null;
+let _isApplyingRemote = false; // prevent feedback loops
 
-    // Show role/room in badge
-    document.getElementById('role-room-badge').textContent =
-      `${IS_TEACHER ? 'Teacher' : 'Student'} • room: ${ROOM_ID}`;
+async function initFirebaseSync() {
+  try {
+    _app = firebase.initializeApp(window.__FIREBASE_CONFIG__);
+    _auth = firebase.auth();
+    _db = firebase.firestore();
 
-    // Example globals your code likely has already:
-    window.currentDay  = window.currentDay  ?? 0;
-    window.currentSlide= window.currentSlide?? 0;
-    window.isPracticeCenter = window.isPracticeCenter ?? false;
-    window.progressData = window.progressData ?? {};
-    window.practiceProgress = window.practiceProgress ?? {};
+    // Teacher authenticates (anon) so writes are allowed
+    if (IS_TEACHER) { await _auth.signInAnonymously(); }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      // Disable nav for students
-      if (!IS_TEACHER) {
-        prevBtn.classList.add('disabled-nav');
-        nextBtn.classList.add('disabled-nav');
-        // block tab clicks
-        dayTabsContainer.addEventListener('click', (e) => {
-          e.preventDefault(); e.stopPropagation();
-        }, true);
-      }
+    _roomRef = _db.collection('rooms').doc(ROOM_ID);
 
-      // Hook nav -> plus sync push
-      prevBtn.addEventListener('click', () => { if (typeof navigatePrev==='function') { navigatePrev(); syncPush(); }});
-      nextBtn.addEventListener('click', () => { if (typeof navigateNext==='function') { navigateNext(); syncPush(); }});
-      if (downloadBtn) downloadBtn.addEventListener('click', () => { if (typeof downloadWork==='function') downloadWork(); });
-      if (feedbackCloseBtn) feedbackCloseBtn.addEventListener('click', () => {
-        const m = document.getElementById('feedback-modal'); if (m) m.classList.remove('show');
-      });
-
-      // init UI (your functions)
-      if (typeof initTabs==='function') initTabs();
-      if (typeof showSlide==='function') showSlide(currentDay, currentSlide);
-
-      // start sync
-      initFirebaseSync();
-    });
-
-    /* ========================== 🔥 SYNC LAYER ========================== */
-    let _db, _roomRef, _unsubSnap = null, _isApplyingRemote = false;
-
-    function initFirebaseSync() {
-      try {
-        firebase.initializeApp(window.__FIREBASE_CONFIG__);
-        _db = firebase.firestore();
-        // Teacher signs in anon so we can write
-        if (IS_TEACHER) {
-          firebase.auth().signInAnonymously().catch(console.error);
-        }
-        _roomRef = _db.collection('rooms').doc(ROOM_ID);
-
-        // Teacher seeds
-        if (IS_TEACHER) {
-          _roomRef.set({
-            day: currentDay,
-            slide: currentSlide,
-            isPractice: isPracticeCenter,
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-          }, { merge: true }).catch(console.error);
-        }
-
-        // Listen
-        _unsubSnap = _roomRef.onSnapshot((doc) => {
-          const data = doc.data(); if (!data) return;
-          if (!IS_TEACHER) {
-            _isApplyingRemote = true;
-            currentDay = data.day ?? 0;
-            isPracticeCenter = !!data.isPractice;
-            currentSlide = data.slide ?? 0;
-            if (typeof initTabs==='function') initTabs();
-            if (typeof showSlide==='function') showSlide(currentDay, currentSlide);
-            _isApplyingRemote = false;
-          }
-        });
-      } catch (e) {
-        console.error('Sync init failed:', e);
-        alert('Sync not available. Check Firebase config.');
-      }
-    }
-
-    function syncPush() {
-      if (!IS_TEACHER || !_roomRef || _isApplyingRemote) return;
-      _roomRef.set({
+    // Seed/merge state from teacher
+    if (IS_TEACHER) {
+      await _roomRef.set({
         day: currentDay,
         slide: currentSlide,
         isPractice: isPracticeCenter,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      }, { merge: true }).catch(console.error);
+      }, { merge: true });
     }
-    /* ======================== END SYNC LAYER ======================== */
+
+    // Subscribe for both roles
+    _unsubSnap = _roomRef.onSnapshot((doc) => {
+      const data = doc.data();
+      if (!data) return;
+
+      if (!IS_TEACHER) {
+        _isApplyingRemote = true;
+        currentDay = data.day ?? 0;
+        isPracticeCenter = !!data.isPractice;
+        currentSlide = data.slide ?? 0;
+        initTabs();
+        showSlide(currentDay, currentSlide);
+        _isApplyingRemote = false;
+      }
+    });
+
+  } catch (e) {
+    console.error('Firebase sync init failed:', e);
+    alert('Sync not available. Check your Firebase config (and enable Anonymous auth + Firestore).');
+  }
+}
+
+async function syncPush() {
+  if (!IS_TEACHER) return;          // students never write
+  if (!_roomRef || _isApplyingRemote) return; // no loops
+  try {
+    await _roomRef.set({
+      day: currentDay,
+      slide: currentSlide,
+      isPractice: isPracticeCenter,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+  } catch (e) {
+    console.error('Sync push failed:', e);
+  }
+}
   </script>
+
 </body>
 </html>
+
