@@ -42,6 +42,9 @@
     <nav id="day-tabs" class="flex space-x-2 overflow-x-auto"></nav>
     <div class="flex items-center gap-2">
       <span id="role-room-badge" class="badge px-2 py-1 rounded-full bg-gray-200 text-gray-700"></span>
+      <button id="change-role-room" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1 rounded-lg text-sm">
+  Change
+</button>      
       <button id="download-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg button-pop flex-shrink-0">
         Download Work
       </button>
@@ -83,26 +86,101 @@
       appId: "1:906128715071:web:347ea08f4d864fde02778a"
     };
   </script>
+<script>
+  // --- role/room parser with localStorage override ---
+  function getRoleAndRoom() {
+    const url = new URL(window.location.href);
+    const qs = new URLSearchParams(url.search);
 
-  <!-- Role / room parsing -->
-  <script>
-    function getRoleAndRoom() {
-      const url = new URL(location.href);
-      const qs = new URLSearchParams(url.search);
+    // Read stored override (saved by the Change button)
+    const storedRole = localStorage.getItem('role_override');   // "teacher" | "student"
+    const storedRoom = localStorage.getItem('room_override');   // e.g., "demo"
 
-      // teacher flag
-      let teacherRaw = qs.get('teacher') ?? (url.hash.includes('teacher') ? '1' : null);
-      let isTeacher = false;
+    // Role
+    let isTeacher = storedRole ? storedRole === 'teacher' : false;
+    if (!storedRole) {
+      const teacherRaw = qs.get('teacher') ?? (url.hash.includes('teacher') ? '1' : null);
       if (teacherRaw !== null) {
         const v = String(teacherRaw).toLowerCase();
         isTeacher = (v === '' || v === '1' || v === 'true' || v === 'yes' || v === 'y');
       }
-      // room
-      const room = qs.get('room') || (url.hash.match(/room=([\w-]+)/)?.[1]) || 'default';
-      return { isTeacher, room };
     }
-    const { isTeacher: IS_TEACHER, room: ROOM_ID } = getRoleAndRoom();
-  </script>
+
+    // Room
+    const room =
+      storedRoom ||
+      qs.get('room') ||
+      (url.hash.match(/room=([\w-]+)/)?.[1]) ||
+      'default';
+
+    return { isTeacher, room };
+  }
+
+  // Extract once → globals you can use everywhere
+  const { isTeacher: IS_TEACHER, room: ROOM_ID } = getRoleAndRoom();
+
+  // Update badge text
+  const badge = document.getElementById('role-room-badge');
+  if (badge) {
+    badge.textContent = `${IS_TEACHER ? 'Teacher' : 'Student'} • room: ${ROOM_ID}`;
+  }
+
+  // Change button logic
+  const changeBtn = document.getElementById('change-role-room');
+  if (changeBtn) {
+    changeBtn.addEventListener('click', () => {
+      const role = (prompt('Type role: teacher or student', IS_TEACHER ? 'teacher' : 'student') || '').trim().toLowerCase();
+      const room = (prompt('Room name (letters, numbers, - or _)', ROOM_ID) || '').trim();
+
+      if (role === 'teacher' || role === 'student') {
+        localStorage.setItem('role_override', role);
+      } else {
+        alert('Role must be "teacher" or "student". Keeping previous value.');
+      }
+
+      if (/^[\w-]+$/.test(room)) {
+        localStorage.setItem('room_override', room);
+      } else {
+        alert('Room must be letters/numbers/-/_. Keeping previous value.');
+      }
+
+      location.reload();
+    });
+  }
+</script>
+
+  <!-- Role / room parsing -->
+ <script>
+  function getRoleAndRoom() {
+    const url = new URL(location.href);
+    const qs = new URLSearchParams(url.search);
+
+    // Allow manual override (survives reloads, no query string needed)
+    const storedRole = localStorage.getItem('role_override');   // "teacher" | "student"
+    const storedRoom = localStorage.getItem('room_override');   // e.g., "demo"
+
+    // 1) role
+    let isTeacher = storedRole ? storedRole.toLowerCase() === 'teacher' : false;
+    if (!storedRole) {
+      const teacherRaw = qs.get('teacher') ?? (url.hash.includes('teacher') ? '1' : null);
+      if (teacherRaw !== null) {
+        const v = String(teacherRaw).toLowerCase();
+        isTeacher = (v === '' || v === '1' || v === 'true' || v === 'yes' || v === 'y');
+      }
+    }
+
+    // 2) room
+    const room =
+      storedRoom ||
+      qs.get('room') ||
+      (url.hash.match(/room=([\w-]+)/)?.[1]) ||
+      'default';
+
+    return { isTeacher, room };
+  }
+  const { isTeacher: IS_TEACHER, room: ROOM_ID } = getRoleAndRoom();
+</script>
+
 
   <!-- The whole app (lesson + UI + Firestore sync) -->
   <script>
